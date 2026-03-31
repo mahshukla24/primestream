@@ -19,14 +19,20 @@
       <nav id="navTabs" class="nav-tabs">
         <button class="nav-tab active" data-view="home">Home</button>
         <button class="nav-tab" data-view="movies">Movies</button>
-        <button class="nav-tab" data-view="tv">TV Shows</button>
         <button class="nav-tab" data-view="trending">Trending</button>
+        <button class="nav-tab" data-view="india">Popular in India</button>
         <button class="nav-tab" data-view="mylist">My List</button>
       </nav>
 
       <div class="nav-actions">
         <div class="search-wrap">
-          <input id="searchInput" type="search" placeholder="Search movies..." autocomplete="off" />
+          <input
+            id="searchInput"
+            type="search"
+            autocomplete="off"
+            placeholder="Search movies..."
+            aria-label="Search movies"
+          />
           <div id="searchSuggestions" class="search-suggestions"></div>
         </div>
         <select id="languageToggle" class="compact-select" aria-label="Language">
@@ -34,25 +40,28 @@
           <option value="hi">HI</option>
           <option value="es">ES</option>
         </select>
-        <button id="themeToggle" class="icon-btn" aria-label="Theme toggle">🌙</button>
+        <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">🌙</button>
         <div class="profile-wrap">
-          <button id="profileBtn" class="icon-btn" aria-label="Profile">👤</button>
+          <button id="profileBtn" class="profile-btn" aria-label="Profile menu">
+            <span class="avatar">👤</span>
+            <span id="profileName">Guest</span>
+          </button>
           <div id="profileMenu" class="profile-menu"></div>
         </div>
         <button id="mobileNavBtn" class="icon-btn mobile-nav-btn" aria-label="Open menu">☰</button>
       </div>
     </header>
 
-    <main id="app">
+    <main id="appRoot">
       <section id="view-home" class="view active">
         <section id="heroSection" class="hero">
           <div id="heroBackdrop" class="hero-backdrop"></div>
           <div class="hero-overlay"></div>
           <div class="hero-content">
             <span class="top-badge">Top 10 Today</span>
-            <h1 id="heroTitle">Loading...</h1>
-            <p id="heroMeta">Rating • Genres</p>
-            <p id="heroOverview">Fetching trending movie details...</p>
+            <h1 id="heroTitle">Spider-Man</h1>
+            <p id="heroMeta">⭐ 0.0/10</p>
+            <p id="heroOverview">Loading Spider-Man showcase...</p>
             <div class="hero-actions">
               <button id="heroTrailerBtn" class="primary-btn">▶ Watch Trailer</button>
               <button id="heroWatchlistBtn" class="ghost-btn">✚ Add to Watchlist</button>
@@ -61,48 +70,44 @@
           <div id="heroTrailerWrap" class="hero-trailer-wrap"></div>
         </section>
 
-        <section class="row-wrapper">
+        <section class="panel">
           <div id="homeRows" class="rows-container"></div>
         </section>
       </section>
 
       <section id="view-movies" class="view">
-        <div class="movies-toolbar">
+        <section class="movies-toolbar">
           <div id="genreChips" class="genre-chips"></div>
           <div class="sort-block">
-            <label for="sortBy">Sort:</label>
+            <label for="sortBy">Sort</label>
             <select id="sortBy" class="compact-select">
               <option value="popularity">Popularity</option>
               <option value="rating">Rating</option>
             </select>
           </div>
-        </div>
-        <div id="moviesGrid" class="movie-grid"></div>
-      </section>
-
-      <section id="view-tv" class="view">
-        <div class="panel">
-          <h2>TV Shows</h2>
-          <p>
-            TV integration layer is ready for expansion. This section currently mirrors high quality
-            TMDb movie curation while keeping SPA transitions and premium interactions.
-          </p>
-          <div id="tvRows" class="rows-container"></div>
-        </div>
+        </section>
+        <section id="moviesGrid" class="movie-grid"></section>
       </section>
 
       <section id="view-trending" class="view">
-        <div class="panel">
+        <section class="panel">
           <h2>Trending This Week</h2>
           <div id="trendingGrid" class="movie-grid"></div>
-        </div>
+        </section>
+      </section>
+
+      <section id="view-india" class="view">
+        <section class="panel">
+          <h2>Popular in India</h2>
+          <div id="indiaGrid" class="movie-grid"></div>
+        </section>
       </section>
 
       <section id="view-mylist" class="view">
-        <div class="panel">
+        <section class="panel">
           <h2>My List</h2>
-          <div id="watchlistGrid" class="movie-grid"></div>
-        </div>
+          <div id="myListGrid" class="movie-grid"></div>
+        </section>
       </section>
     </main>
 
@@ -114,22 +119,10 @@
         <a href="#">Contact</a>
         <a href="#">Privacy Policy</a>
       </div>
-      <div class="social-links">
-        <a href="#" aria-label="X">𝕏</a>
-        <a href="#" aria-label="Instagram">◎</a>
-        <a href="#" aria-label="YouTube">▶</a>
-      </div>
       <p>© <span id="yearText"></span> Prime Stream</p>
     </footer>
 
     <div id="toastStack" class="toast-stack"></div>
-
-    <div id="movieModal" class="modal">
-      <div class="modal-card movie-modal-card">
-        <button class="close-btn" data-close-modal="movieModal">✕</button>
-        <div id="movieModalBody"></div>
-      </div>
-    </div>
 
     <div id="trailerModal" class="modal">
       <div class="modal-card trailer-modal-card">
@@ -144,13 +137,20 @@
       </div>
     </div>
 
+    <div id="movieModal" class="modal">
+      <div class="modal-card movie-modal-card">
+        <button class="close-btn" data-close-modal="movieModal">✕</button>
+        <div id="movieModalBody"></div>
+      </div>
+    </div>
+
     <div id="authModal" class="modal">
       <div class="modal-card auth-modal-card">
         <button class="close-btn" data-close-modal="authModal">✕</button>
         <h3 id="authTitle">Login</h3>
         <form id="authForm" novalidate>
           <div id="nameFieldWrap" class="field hidden">
-            <label for="authName">Full Name</label>
+            <label for="authName">Username</label>
             <input id="authName" type="text" />
           </div>
           <div class="field">
