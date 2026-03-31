@@ -68,6 +68,17 @@ a {
   background: linear-gradient(135deg, rgba(8, 12, 20, 0.85), rgba(27, 39, 69, 0.7));
   box-shadow: var(--shadow);
   padding: clamp(1rem, 3vw, 2rem);
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-overlay::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(circle, rgba(79, 124, 255, 0.2), transparent 60%);
+  filter: blur(26px);
+  pointer-events: none;
 }
 
 .landing-content,
@@ -488,6 +499,20 @@ main {
 .movie-card:hover {
   transform: translateY(-7px) scale(1.02);
   box-shadow: var(--shadow);
+}
+
+.movie-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(79, 124, 255, 0.18), transparent 45%);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+  pointer-events: none;
+}
+
+.movie-card:hover::after {
+  opacity: 1;
 }
 
 .movie-card::after {
