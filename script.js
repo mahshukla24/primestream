@@ -29,6 +29,8 @@ const SPORTS_KEYWORD_RE =
   /\b(highlight|highlights|cricket|football|soccer|chess|badminton|goal|wicket|inning|checkmate|tournament|cup|league|final|semi|match)\b/i;
 const BLOCKED_SPORTS_LATIN_RE =
   /\b(resumen|partido|golazo|bahasa|naik|dunia|pertandingan|liga indonesia|turkiye)\b/i;
+const IMPORTANT_SPORTS_RE =
+  /\b(world cup|icc|champions trophy|ipl|ashes|bgt|euro|ucl|champions league|premier league|final|semi final|knockout|grandmaster|fide|olympics)\b/i;
 
 const MOVIES = [
   {
@@ -371,7 +373,7 @@ const el = {
   moodGrid: document.getElementById("moodGrid"),
   smartPicksGrid: document.getElementById("smartPicksGrid"),
   topPicksGrid: document.getElementById("topPicksGrid"),
-  top10List: document.getElementById("top10List"),
+  reviewsGrid: document.getElementById("reviewsGrid"),
   continueGrid: document.getElementById("continueGrid"),
   mcuGrid: document.getElementById("mcuGrid"),
   bollyGrid: document.getElementById("bollyGrid"),
@@ -706,8 +708,11 @@ function updateLandingStats() {
   }
 }
 
-function cycleNewsUrls(filter) {
-  const urls = newsUrlsByFilter(filter);
+function cycleNewsUrls(filter, includeGlobalFallback = false) {
+  const primary = newsUrlsByFilter(filter);
+  const urls = includeGlobalFallback
+    ? uniqueBy([...primary, ...newsUrlsByFilter("all")], (item) => item)
+    : primary;
   if (!urls.length) {
     return [];
   }
@@ -727,6 +732,39 @@ function cycleSportsQuery(tab) {
   const index = state.sportsQueryIndex[tab] || 0;
   state.sportsQueryIndex[tab] = (index + 1) % pool.length;
   return [...pool.slice(index), ...pool.slice(0, index)];
+}
+
+function sportsImportanceScore(item) {
+  const text = `${item.snippet?.title || ""} ${item.snippet?.description || ""}`.toLowerCase();
+  let score = 0;
+  if (IMPORTANT_SPORTS_RE.test(text)) score += 40;
+  if (text.includes("highlights")) score += 20;
+  if (text.includes("final")) score += 15;
+  if (text.includes("india")) score += 8;
+  if (text.includes("live")) score -= 20;
+  if (text.includes("shorts")) score -= 25;
+  return score;
+}
+
+const PRIORITY_SPORTS_RE = {
+  cricket:
+    /\b(india|ind vs|vs|test|odi|t20|world cup|champions trophy|final|semi final|super over|last over|wicket|century|ipl|bbl|psl|icc)\b/i,
+  football:
+    /\b(uefa|ucl|champions league|premier league|la liga|serie a|bundesliga|world cup|final|semi final|goal|hat-trick|derby)\b/i,
+  chess: /\b(fide|world championship|candidates|grandmaster|gm|final|tiebreak|blitz|rapid)\b/i,
+  badminton: /\b(bwf|super series|world championship|all england|final|semi final|olympics)\b/i
+};
+
+function sportsPriorityScore(item, tab = state.sportsTab || "cricket") {
+  const text = `${item.snippet?.title || ""} ${item.snippet?.description || ""}`.toLowerCase();
+  let score = 0;
+  if (PRIORITY_SPORTS_RE[tab]?.test(text)) score += 35;
+  if (text.includes("highlights")) score += 25;
+  if (text.includes("official")) score += 15;
+  if (text.includes("full match")) score += 10;
+  if (text.includes("live")) score -= 20;
+  if (SPORTS_SPAM_RE.test(text)) score -= 60;
+  return score;
 }
 
 function trailerFromVideoId(videoId) {
@@ -922,7 +960,7 @@ async function hydrateMovieAssets() {
   updateHero(state.heroMovie);
   renderMovieRows();
   renderMoodResults(state.mood);
-  renderTop10();
+  renderCommunityReviews();
   renderSmartPicks();
   renderTopPicks();
   renderContinueWatching();
@@ -1051,22 +1089,116 @@ function renderMovieSkeletons() {
   });
 }
 
-function renderTop10() {
-  const top = [...movieCatalog()]
+function reviewStateMap() {
+  return getJSON(userScopedKey("reviews") || "primeStream.guest.reviews", {});
+}
+
+function setReviewStateMap(map) {
+  const key = userScopedKey("reviews") || "primeStream.guest.reviews";
+  setJSON(key, map);
+}
+
+function reviewVotesMap() {
+  return getJSON("primeStream.reviewVotes", {});
+}
+
+function setReviewVotesMap(map) {
+  setJSON("primeStream.reviewVotes", map);
+}
+
+function reviewSeedForMovie(movie) {
+  const t = normText(movie.title).replace(/\s+/g, "");
+  let hash = 0;
+  for (let i = 0; i < t.length; i += 1) {
+    hash = (hash * 31 + t.charCodeAt(i)) % 100000;
+  }
+  return hash;
+}
+
+function generatedCommunityReviews(movie) {
+  const seed = reviewSeedForMovie(movie);
+  const profiles = [
+    "Aarav", "Sophia", "Noah", "Isha", "Liam", "Vihaan", "Emma", "Kabir", "Olivia", "Riya"
+  ];
+  const snippets = [
+    "Amazing pacing and visuals, worth watching on a big screen.",
+    "Solid performances and high replay value.",
+    "Trailer looked great and the movie delivered.",
+    "Strong cinematography with a memorable score.",
+    "Great for weekend binge, very engaging throughout.",
+    "A fan-favorite vibe with standout moments."
+  ];
+  const count = 3 + (seed % 4);
+  const output = [];
+  for (let i = 0; i < count; i += 1) {
+    const profile = profiles[(seed + i * 7) % profiles.length];
+    const text = snippets[(seed + i * 11) % snippets.length];
+    const rating = 7 + ((seed + i * 13) % 30) / 10;
+    output.push({ user: profile, text, rating: Number(Math.min(10, rating).toFixed(1)) });
+  }
+  return output;
+}
+
+function renderCommunityReviews() {
+  if (!el.reviewsGrid) {
+    return;
+  }
+  const pool = [...movieCatalog()]
+    .filter((movie) => Number(movie.rating || 0) >= 7)
     .sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
-    .slice(0, 10);
-  el.top10List.innerHTML = top
-    .map(
-      (movie, idx) => `
-      <li>
-        <span>#${idx + 1}</span>
-        <button data-action="open-movie" data-title="${encodeTitle(movie.title)}">${escapeHtml(
-        movie.title
-      )}</button>
-      </li>
-    `
-    )
+    .slice(0, 14);
+  const myReviews = reviewStateMap();
+  const votes = reviewVotesMap();
+  el.reviewsGrid.innerHTML = pool
+    .map((movie) => {
+      const token = encodeTitle(movie.title);
+      const generated = generatedCommunityReviews(movie);
+      const myReview = myReviews[movie.title];
+      const all = myReview
+        ? [...generated, { user: "You", text: myReview.text, rating: myReview.rating, isUser: true }]
+        : generated;
+      const avg = all.reduce((acc, review) => acc + Number(review.rating || 0), 0) / Math.max(1, all.length);
+      const vote = votes[movie.title] || {};
+      const likes = generated.length * 11 + (vote.likes || 0);
+      const dislikes = generated.length * 2 + (vote.dislikes || 0);
+      const reviewMarkup = all
+        .slice(0, 4)
+        .map(
+          (review) => `
+            <article class="review-item ${review.isUser ? "mine" : ""}">
+              <div class="review-user">${escapeHtml(review.user)} • ⭐ ${Number(review.rating).toFixed(1)}</div>
+              <p>${escapeHtml(review.text)}</p>
+            </article>
+          `
+        )
+        .join("");
+      return `
+        <article class="review-card reveal">
+          <div class="review-head">
+            <h4>${escapeHtml(movie.title)}</h4>
+            <span>Community ⭐ ${avg.toFixed(1)}</span>
+          </div>
+          <div class="review-list">${reviewMarkup}</div>
+          <form class="review-form" data-movie="${token}">
+            <label>Rate it</label>
+            <input type="range" min="1" max="10" step="0.1" value="${myReview?.rating || Math.max(
+              6,
+              Number(movie.rating || 7)
+            )}" data-review-range="${token}" />
+            <textarea rows="2" maxlength="240" placeholder="Share your quick review..." data-review-text="${token}">${
+              myReview?.text ? escapeHtml(myReview.text) : ""
+            }</textarea>
+            <div class="review-actions">
+              <button type="submit" class="mini-btn">Submit Review</button>
+              <button type="button" class="mini-btn review-like-btn" data-review-like="${token}">👍 ${likes}</button>
+              <button type="button" class="mini-btn review-dislike-btn" data-review-dislike="${token}">👎 ${dislikes}</button>
+            </div>
+          </form>
+        </article>
+      `;
+    })
     .join("");
+  revealOnScroll();
 }
 
 function renderMovieRows() {
@@ -1377,13 +1509,47 @@ function toNewsCardShape(article) {
   };
 }
 
+async function fetchReutersBackupNews() {
+  try {
+    const encoded = encodeURIComponent("world news english latest");
+    const rssUrl = `https://news.google.com/rss/search?q=${encoded}&hl=en-US&gl=US&ceid=US:en`;
+    const proxyUrl = `${ALLORIGINS_GET}${encodeURIComponent(rssUrl)}`;
+    const rss = await fetchJSONWithFallback(proxyUrl, { cacheKey: "news.rss.google.world" });
+    const raw = String(rss?.contents || "");
+    if (!raw) {
+      return [];
+    }
+    const items = [...raw.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((match) => match[1]);
+    const parsed = items
+      .map((item) => {
+        const title = item.match(/<title>([\s\S]*?)<\/title>/)?.[1] || "";
+        const link = item.match(/<link>([\s\S]*?)<\/link>/)?.[1] || "";
+        const pubDate = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || "";
+        const cleanTitle = title.replace(/<!\[CDATA\[|\]\]>/g, "").trim();
+        return {
+          title: cleanTitle,
+          description: cleanTitle,
+          image: NEWS_PLACEHOLDER,
+          url: link.trim(),
+          source: { name: "Google News" },
+          publishedAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString()
+        };
+      })
+      .filter((article) => article.url && article.title && isLikelyEnglish(article.title))
+      .slice(0, 120);
+    return parsed;
+  } catch (_error) {
+    return [];
+  }
+}
+
 async function fetchNews(filter = "all", options = {}) {
   const append = Boolean(options.append);
   const keepDisplay = Boolean(options.keepDisplay);
   updateStatusBadge(el.newsStatusBadge, "Loading", "neutral");
   updateStatusBadge(el.landingNewsBadge, "Loading", "neutral");
 
-  const urls = cycleNewsUrls(filter);
+  const urls = cycleNewsUrls(filter, true);
   const collected = [];
 
   for (const url of urls) {
@@ -1400,6 +1566,11 @@ async function fetchNews(filter = "all", options = {}) {
     } catch (_error) {
       // continue next fallback endpoint
     }
+  }
+
+  if (!collected.length) {
+    const backup = await fetchReutersBackupNews();
+    collected.push(...backup);
   }
 
   const merged = append ? [...state.news, ...collected] : collected;
@@ -1507,6 +1678,21 @@ function isStrictSportsItem(item) {
   return true;
 }
 
+function scoreSportsImportance(item) {
+  const text = `${item.snippet?.title || ""} ${item.snippet?.description || ""}`.toLowerCase();
+  let score = 0;
+  if (text.includes("highlights")) score += 35;
+  if (text.includes("final")) score += 22;
+  if (text.includes("semi final") || text.includes("semi-final")) score += 18;
+  if (text.includes("world cup")) score += 30;
+  if (text.includes("champions trophy") || text.includes("championship")) score += 20;
+  if (text.includes("india")) score += 12;
+  if (text.includes("vs")) score += 10;
+  if (text.includes("full match")) score -= 12;
+  if (text.includes("live")) score -= 26;
+  return score;
+}
+
 async function fetchSports(query, cacheKey = query, options = {}) {
   const append = Boolean(options.append);
   const resetDisplay = options.resetDisplay !== false;
@@ -1604,7 +1790,7 @@ async function loadMoreDiscoverMovies() {
     );
     state.discoverPage += 1;
     renderDiscoverGrid();
-    renderTop10();
+    renderCommunityReviews();
     updateLandingStats();
   } catch (_error) {
     toast("Movie discovery refresh failed");
@@ -2267,11 +2453,11 @@ function initMovies() {
   renderMovieSkeletons();
   setTimeout(() => {
     updateHero(state.heroMovie);
-    renderTop10();
     renderMovieRows();
     renderMoodResults(state.mood);
     renderSmartPicks();
     renderTopPicks();
+    renderCommunityReviews();
     renderContinueWatching();
     renderMyList();
     renderDiscoverGrid();

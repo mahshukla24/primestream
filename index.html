@@ -23,7 +23,7 @@
       <div class="nav-actions">
         <div class="search-wrap">
           <input id="globalSearch" type="search" placeholder="Search..." />
-            <div id="searchSuggestions" class="search-suggestions hidden"></div>
+          <div id="searchSuggestions" class="search-suggestions hidden"></div>
         </div>
         <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">🌙</button>
         <div class="profile-wrap">
@@ -116,8 +116,11 @@
         </section>
 
         <section class="panel">
-          <h3>Top 10 Ranking</h3>
-          <ol id="top10List" class="top-list"></ol>
+          <div class="section-head">
+            <h3>Community Reviews</h3>
+            <span class="status-badge neutral">Live user vibe</span>
+          </div>
+          <div id="reviewsGrid" class="reviews-grid"></div>
         </section>
 
         <section class="panel">

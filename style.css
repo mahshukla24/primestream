@@ -62,6 +62,10 @@ a {
   place-items: center;
   position: relative;
   overflow: hidden;
+  background:
+    radial-gradient(circle at 85% 10%, rgba(79, 124, 255, 0.18), transparent 40%),
+    radial-gradient(circle at 15% 80%, rgba(154, 92, 255, 0.22), transparent 42%),
+    linear-gradient(135deg, #040815 0%, #0b1428 45%, #121e38 100%);
 }
 
 .landing-view::before {
@@ -80,11 +84,31 @@ a {
   z-index: 0;
 }
 
+.landing-view::after {
+  content: "";
+  position: absolute;
+  inset: -15%;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.05), transparent 34%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.025) 0px,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px,
+      transparent 32px
+    );
+  filter: blur(1px);
+  opacity: 0.45;
+  animation: auroraShift 22s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
 .landing-overlay {
   width: min(1200px, 100%);
   border: 1px solid var(--border);
   border-radius: 22px;
-  background: linear-gradient(135deg, rgba(8, 12, 20, 0.85), rgba(27, 39, 69, 0.7));
+  background: linear-gradient(135deg, rgba(8, 12, 20, 0.8), rgba(27, 39, 69, 0.66));
   box-shadow: var(--shadow);
   padding: clamp(1rem, 3vw, 2rem);
   position: relative;
@@ -98,6 +122,19 @@ a {
   inset: -30%;
   background: radial-gradient(circle, rgba(79, 124, 255, 0.2), transparent 60%);
   filter: blur(26px);
+  pointer-events: none;
+}
+
+.landing-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.09) 0%,
+    rgba(255, 255, 255, 0) 22%,
+    rgba(255, 255, 255, 0) 100%
+  );
   pointer-events: none;
 }
 
@@ -137,6 +174,12 @@ a {
   padding: 0.65rem 0.75rem;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(8px);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.landing-stats article:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
 }
 
 .landing-stats strong {
@@ -165,11 +208,29 @@ a {
   text-align: left;
   cursor: pointer;
   transition: transform 0.24s ease, box-shadow 0.24s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.category-card::before {
+  content: "";
+  position: absolute;
+  inset: -70% auto auto -70%;
+  width: 170%;
+  height: 170%;
+  background: radial-gradient(circle, rgba(79, 124, 255, 0.2), transparent 56%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
 }
 
 .category-card:hover {
   transform: translateY(-8px) scale(1.01);
   box-shadow: 0 0 0 1px rgba(79, 124, 255, 0.28), var(--shadow);
+}
+
+.category-card:hover::before {
+  opacity: 1;
 }
 
 .category-card h2 {
@@ -795,6 +856,99 @@ main {
   text-align: left;
 }
 
+.reviews-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.9rem;
+}
+
+.review-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  padding: 0.8rem;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
+}
+
+.review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.review-head h4 {
+  margin: 0;
+  font-size: 0.94rem;
+}
+
+.review-head span {
+  color: #ffd78e;
+  font-size: 0.78rem;
+}
+
+.review-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.review-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.5rem 0.56rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.review-item.mine {
+  border-color: rgba(79, 124, 255, 0.45);
+  background: rgba(79, 124, 255, 0.14);
+}
+
+.review-user {
+  font-size: 0.78rem;
+  color: #ffd78e;
+  margin-bottom: 0.2rem;
+}
+
+.review-item p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #dce6ff;
+  line-height: 1.45;
+}
+
+.review-form {
+  margin-top: 0.55rem;
+  display: grid;
+  gap: 0.32rem;
+}
+
+.review-form label {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.review-form input[type="range"] {
+  width: 100%;
+}
+
+.review-form textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  padding: 0.42rem;
+  resize: vertical;
+}
+
+.review-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
 .news-grid,
 .sports-grid {
   display: grid;
@@ -1108,6 +1262,15 @@ main {
   }
   to {
     transform: translate3d(-60px, 28px, 0);
+  }
+}
+
+@keyframes auroraShift {
+  from {
+    transform: translate3d(-2%, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(2%, -2%, 0) scale(1.03);
   }
 }
 
