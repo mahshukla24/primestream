@@ -19,6 +19,21 @@ $reviews = $pdo->query(
      ORDER BY r.id DESC
      LIMIT 30'
 )->fetchAll();
+$watchlistRows = $pdo->query(
+    'SELECT w.id, w.user_id, w.title_id, w.created_at, u.name AS user_name, t.title AS title_name
+     FROM watchlist w
+     JOIN users u ON u.id = w.user_id
+     JOIN titles t ON t.id = w.title_id
+     ORDER BY w.id DESC
+     LIMIT 30'
+)->fetchAll();
+$journalRows = $pdo->query(
+    'SELECT j.id, j.user_id, j.mood, j.note, j.created_at, u.name AS user_name
+     FROM mood_journal j
+     JOIN users u ON u.id = j.user_id
+     ORDER BY j.id DESC
+     LIMIT 30'
+)->fetchAll();
 
 $exportDir = storage_path('exports');
 $uploadDir = storage_path('uploads');
@@ -67,6 +82,8 @@ json_response([
         'users' => $users,
         'titles' => $titles,
         'reviews' => $reviews,
+        'watchlist' => $watchlistRows,
+        'mood_journal' => $journalRows,
     ],
     'files' => [
         'exports' => $exportFiles,

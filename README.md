@@ -58,6 +58,10 @@ Change them there if your XAMPP setup is different.
 - Export trending titles to JSON file
 - Stats panel showing records in DB and storage info
 - Live storage viewer panel to show real DB rows and stored files
+- Watchlist (save/remove titles)
+- Mood Journal (save mood notes + analyze top mood)
+- "For Your Vibe" personalized recommendation lane
+- "Surprise Me" smart picker (based on your mood + review behavior)
 
 ## 4) Important Directories
 
@@ -83,6 +87,14 @@ Change them there if your XAMPP setup is different.
 6. Open the **Live Data Storage** panel in the right column and click **Refresh Data Storage View**.
    - It shows:
      - rows from `users`, `titles`, `reviews` tables
+     - rows from `watchlist`, `mood_journal` tables
      - uploaded files in `storage/uploads`
      - exported JSON files in `storage/exports`
      - latest lines from `storage/review_audit.log`
+
+## 7) New uniqueness features (to avoid Prime copy look)
+
+- **Pulse Watchlist**: your own quick-access title queue
+- **Mood Journal**: short entries tagged with mood; app derives your dominant vibe
+- **For Your Vibe**: recommendation rail tuned by your journal + reviews
+- **Surprise Me**: one-click random title based on your current behavior

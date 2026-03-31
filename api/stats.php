@@ -8,6 +8,8 @@ $pdo = db();
 $users = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
 $titles = (int) $pdo->query('SELECT COUNT(*) FROM titles')->fetchColumn();
 $reviews = (int) $pdo->query('SELECT COUNT(*) FROM reviews')->fetchColumn();
+$watchlist = (int) $pdo->query('SELECT COUNT(*) FROM watchlist')->fetchColumn();
+$journalEntries = (int) $pdo->query('SELECT COUNT(*) FROM mood_journal')->fetchColumn();
 
 $uploadsDir = root_path('storage/uploads');
 $exportsDir = root_path('storage/exports');
@@ -36,6 +38,8 @@ json_response([
         'users' => $users,
         'titles' => $titles,
         'reviews' => $reviews,
+        'watchlist' => $watchlist,
+        'mood_journal_entries' => $journalEntries,
         'uploaded_avatars' => $uploadedAvatars,
         'exports_count' => $exportsCount,
         'audit_log_bytes' => $auditBytes,

@@ -12,7 +12,7 @@ $user = auth_user();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prime Stream | Real-life Streaming Demo</title>
+    <title>Prime Stream | Your Vibe, Your Stream</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 </head>
@@ -22,7 +22,7 @@ $user = auth_user();
             <span class="logo">PS</span>
             <div>
                 <h1>Prime Stream</h1>
-                <p>Localhost-ready digital streaming platform demo.</p>
+                <p>Not just another clone: mood intelligence + personal story mode.</p>
             </div>
         </div>
         <div id="sessionPanel" class="session-panel">
@@ -41,6 +41,20 @@ $user = auth_user();
     </header>
 
     <main>
+        <section class="hero glass">
+            <div>
+                <h2>Discover by mood, not by endless scrolling</h2>
+                <p class="hint">
+                    Prime Stream highlights your mood history, gives "For Your Vibe" picks, and lets you curate
+                    your own watch journey.
+                </p>
+            </div>
+            <div class="hero-actions">
+                <button id="surpriseBtn" class="btn-primary">Surprise Me</button>
+                <button id="refreshAllBtn" class="btn-secondary">Refresh Everything</button>
+            </div>
+        </section>
+
         <section class="controls glass">
             <div class="control-group">
                 <label for="searchInput">Search titles</label>
@@ -64,14 +78,36 @@ $user = auth_user();
 
         <section class="layout-grid">
             <section>
-                <div id="catalog" class="catalog"></div>
+                <div class="glass section-card" id="vibePanel">
+                    <div class="section-head">
+                        <h3>For Your Vibe</h3>
+                        <small id="vibeReason">Personalized picks based on your ratings + mood history.</small>
+                    </div>
+                    <div id="vibeItems" class="mini-grid"></div>
+                </div>
+
+                <div class="glass section-card">
+                    <div class="section-head">
+                        <h3>Explore Catalog</h3>
+                        <small>Tap trailer, add to watchlist, write reviews.</small>
+                    </div>
+                    <div id="catalog" class="catalog"></div>
+                </div>
+
+                <div class="glass section-card" id="watchlistPanel">
+                    <div class="section-head">
+                        <h3>Your Watchlist</h3>
+                        <small>Build your own upcoming stream lineup.</small>
+                    </div>
+                    <div id="watchlistItems" class="mini-grid"></div>
+                </div>
             </section>
 
             <aside class="right-col">
                 <div class="glass auth-card">
                     <h2>Account Zone</h2>
                     <?php if (!$user): ?>
-                        <div class="tabs">
+                        <div class="tabs" id="authTabs">
                             <button class="tab-btn active" data-tab="loginTab">Login</button>
                             <button class="tab-btn" data-tab="registerTab">Register</button>
                         </div>
@@ -95,6 +131,23 @@ $user = auth_user();
                     <?php endif; ?>
                 </div>
 
+                <div class="glass mood-card" id="moodJournalPanel">
+                    <h2>Mood Journal</h2>
+                    <p class="hint">Log your mood + reason and get better suggestions.</p>
+                    <form id="journalForm" class="auth-form active">
+                        <select id="journalMood" name="mood" required>
+                            <option value="chill">Chill</option>
+                            <option value="thrill">Thrill</option>
+                            <option value="focus">Focus</option>
+                            <option value="family">Family</option>
+                            <option value="romance">Romance</option>
+                        </select>
+                        <textarea id="journalNote" name="note" rows="3" maxlength="280" placeholder="How are you feeling today?" required></textarea>
+                        <button class="btn-primary" type="submit">Save Mood Entry</button>
+                    </form>
+                    <div id="journalEntries" class="feed-list"></div>
+                </div>
+
                 <div id="statsPanel" class="glass stats-card">
                     <h2>System Stats</h2>
                     <div class="stats-list"></div>
@@ -111,8 +164,12 @@ $user = auth_user();
                             <pre id="usersDump" class="dump">Loading...</pre>
                         </div>
                         <div class="storage-block">
-                            <h4>Reviews table</h4>
-                            <pre id="reviewsDump" class="dump">Loading...</pre>
+                            <h4>Watchlist table</h4>
+                            <pre id="watchlistDump" class="dump">Loading...</pre>
+                        </div>
+                        <div class="storage-block">
+                            <h4>Mood journal table</h4>
+                            <pre id="journalDump" class="dump">Loading...</pre>
                         </div>
                         <div class="storage-block">
                             <h4>Files (exports + uploads)</h4>
