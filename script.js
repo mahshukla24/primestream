@@ -1,16 +1,21 @@
 const NEWS_API_KEY = "89e2055d344e11518febbae8a42b5b44";
-const NEWS_URL = `https://gnews.io/api/v4/top-headlines?lang=en&topic=world&max=12&apikey=${NEWS_API_KEY}`;
+const NEWS_URL = `https://gnews.io/api/v4/top-headlines?lang=en&topic=world&max=25&apikey=${NEWS_API_KEY}`;
 
 const YOUTUBE_API_KEY = "AIzaSyA0glsPFgjtnx2dJCCxn-xeRvKSHweDaXA";
 const YOUTUBE_BASE = "https://www.googleapis.com/youtube/v3/search";
-const CORS_PROXIES = [
-  "https://api.allorigins.win/raw?url=",
-  "https://corsproxy.io/?"
-];
+const CORS_PROXIES = ["https://api.allorigins.win/raw?url=", "https://corsproxy.io/?"];
 const ALLORIGINS_GET = "https://api.allorigins.win/get?url=";
+
+const TMDB_API_KEY = "6ecc4d6938d362e905e2606fe99a3d70";
+const TMDB_BASE = "https://api.themoviedb.org/3";
+const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/original";
+
 const API_CACHE_PREFIX = "primeStream.apiCache.";
 const API_CACHE_TTL_MS = 1000 * 60 * 30;
 const FETCH_TIMEOUT_MS = 12000;
+const MOVIE_PLACEHOLDER = "https://via.placeholder.com/600x900/141b2f/ffffff?text=Prime+Stream";
+const NEWS_PLACEHOLDER = "https://via.placeholder.com/900x520/11192d/ffffff?text=World+News";
+const SPORTS_PLACEHOLDER = "https://via.placeholder.com/900x520/11192d/ffffff?text=Sports+Highlights";
 
 const MOVIES = [
   {
@@ -236,17 +241,19 @@ const MOVIES = [
 ];
 
 const SPORTS_QUERIES = {
-  cricket: "IPL highlights 2025",
-  football: "football highlights UCL",
-  chess: "chess championship highlights",
-  badminton: "badminton highlights"
+  cricket: "cricket highlights english commentary t20 ipl international match",
+  football: "football highlights english commentary ucl premier league",
+  chess: "chess championship highlights english commentary",
+  badminton: "badminton highlights world tour english commentary"
 };
 
 const STORAGE = {
   users: "primeStream.users",
   user: "primeStream.user",
   fallbackRecent: "primeStream.guest.recent",
-  fallbackContinue: "primeStream.guest.continue"
+  fallbackContinue: "primeStream.guest.continue",
+  movieAssets: "primeStream.movieAssets",
+  discoverCache: "primeStream.discoverCache"
 };
 
 const state = {
@@ -257,12 +264,21 @@ const state = {
   pendingAction: null,
   news: [],
   sportsVideos: [],
+  discoverMovies: [],
+  movieSearchResults: [],
+  dynamicMovies: {},
   newsCache: {},
   sportsCache: {},
   trailerCache: {},
+  movieAssetCache: getJSON(STORAGE.movieAssets, {}),
   hoverTimers: {},
   heroMovie: MOVIES.find((movie) => movie.title.includes("Spider-Man")) || MOVIES[0],
-  lastScrollY: 0
+  newsDisplayCount: 18,
+  sportsDisplayCount: 24,
+  discoverPage: 1,
+  lastScrollY: 0,
+  currentSearchTerm: "",
+  searchDebounceTimer: null
 };
 
 const el = {
@@ -271,6 +287,7 @@ const el = {
   sectionBtn: document.getElementById("sectionBtn"),
   myListBtn: document.getElementById("myListBtn"),
   globalSearch: document.getElementById("globalSearch"),
+  searchSuggestions: document.getElementById("searchSuggestions"),
   themeToggle: document.getElementById("themeToggle"),
   profileBtn: document.getElementById("profileBtn"),
   profileMenu: document.getElementById("profileMenu"),
@@ -278,6 +295,11 @@ const el = {
 
   landingView: document.getElementById("landingView"),
   categoryCards: Array.from(document.querySelectorAll(".category-card")),
+  landingMovieCount: document.getElementById("landingMovieCount"),
+  landingNewsCount: document.getElementById("landingNewsCount"),
+  landingSportsCount: document.getElementById("landingSportsCount"),
+  landingNewsBadge: document.getElementById("landingNewsBadge"),
+  landingSportsBadge: document.getElementById("landingSportsBadge"),
 
   moviesView: document.getElementById("moviesView"),
   movieHeroBackdrop: document.getElementById("movieHeroBackdrop"),
@@ -288,6 +310,7 @@ const el = {
   heroTrailerBtn: document.getElementById("heroTrailerBtn"),
   heroWatchlistBtn: document.getElementById("heroWatchlistBtn"),
   quickPlayBtn: document.getElementById("quickPlayBtn"),
+  loadMoreMoviesBtn: document.getElementById("loadMoreMoviesBtn"),
   moodButtons: Array.from(document.querySelectorAll("[data-mood]")),
   moodGrid: document.getElementById("moodGrid"),
   smartPicksGrid: document.getElementById("smartPicksGrid"),
@@ -299,18 +322,26 @@ const el = {
   hollyGrid: document.getElementById("hollyGrid"),
   actionGrid: document.getElementById("actionGrid"),
   mindGrid: document.getElementById("mindGrid"),
+  discoverGrid: document.getElementById("discoverGrid"),
+
   myListView: document.getElementById("myListView"),
+  myListStats: document.getElementById("myListStats"),
   myListGrid: document.getElementById("myListGrid"),
+  myRecentGrid: document.getElementById("myRecentGrid"),
 
   newsView: document.getElementById("newsView"),
   newsFilterButtons: Array.from(document.querySelectorAll("[data-news-filter]")),
   refreshNewsBtn: document.getElementById("refreshNewsBtn"),
+  loadMoreNewsBtn: document.getElementById("loadMoreNewsBtn"),
   newsGrid: document.getElementById("newsGrid"),
+  newsStatusBadge: document.getElementById("newsStatusBadge"),
 
   sportsView: document.getElementById("sportsView"),
   sportsFilterButtons: Array.from(document.querySelectorAll("[data-sports-filter]")),
+  loadMoreSportsBtn: document.getElementById("loadMoreSportsBtn"),
   sportsTopGrid: document.getElementById("sportsTopGrid"),
   sportsPlayerGrid: document.getElementById("sportsPlayerGrid"),
+  sportsStatusBadge: document.getElementById("sportsStatusBadge"),
 
   scrollTopBtn: document.getElementById("scrollTopBtn"),
   toastStack: document.getElementById("toastStack"),
@@ -349,19 +380,77 @@ function setJSON(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
-async function fetchJSONWithFallback(url) {
-  const candidates = [url, ...CORS_PROXIES.map((prefix) => `${prefix}${encodeURIComponent(url)}`)];
+function toCacheKey(key) {
+  return `${API_CACHE_PREFIX}${encodeURIComponent(key).slice(0, 180)}`;
+}
+
+function readApiCache(key, ttl = API_CACHE_TTL_MS) {
+  const payload = getJSON(toCacheKey(key), null);
+  if (!payload || !payload.time || payload.data === undefined) {
+    return { hit: false, data: null };
+  }
+  if (Date.now() - payload.time > ttl) {
+    return { hit: false, data: payload.data };
+  }
+  return { hit: true, data: payload.data };
+}
+
+function writeApiCache(key, data) {
+  setJSON(toCacheKey(key), { time: Date.now(), data });
+}
+
+async function withTimeout(promise, timeoutMs = FETCH_TIMEOUT_MS) {
+  let timeoutHandle = null;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutHandle = setTimeout(() => reject(new Error("Request timeout")), timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
+}
+
+async function parseCandidateResponse(response, parser) {
+  if (parser === "alloriginsGet") {
+    const payload = await response.json();
+    const contents = payload?.contents || "{}";
+    return JSON.parse(contents);
+  }
+  return response.json();
+}
+
+async function fetchJSONWithFallback(url, options = {}) {
+  const key = options.cacheKey || url;
+  const ttl = options.ttl ?? API_CACHE_TTL_MS;
+  const cached = readApiCache(key, ttl);
+  if (cached.hit) {
+    return cached.data;
+  }
+
+  const candidates = [
+    { url, parser: "json" },
+    ...CORS_PROXIES.map((prefix) => ({ url: `${prefix}${encodeURIComponent(url)}`, parser: "json" })),
+    { url: `${ALLORIGINS_GET}${encodeURIComponent(url)}`, parser: "alloriginsGet" }
+  ];
+
   let lastError = null;
   for (const candidate of candidates) {
     try {
-      const response = await fetch(candidate);
+      const response = await withTimeout(fetch(candidate.url));
       if (!response.ok) {
         throw new Error(`Request failed: ${response.status}`);
       }
-      return await response.json();
+      const data = await parseCandidateResponse(response, candidate.parser);
+      writeApiCache(key, data);
+      return data;
     } catch (error) {
       lastError = error;
     }
+  }
+
+  if (cached.data) {
+    return cached.data;
   }
   throw lastError || new Error("Request failed");
 }
@@ -381,9 +470,9 @@ function getCurrentUser() {
 function setCurrentUser(user) {
   if (user) {
     setJSON(STORAGE.user, user);
-  } else {
-    localStorage.removeItem(STORAGE.user);
+    return;
   }
+  localStorage.removeItem(STORAGE.user);
 }
 
 function userScopedKey(scope) {
@@ -436,9 +525,9 @@ function setContinueWatching(map) {
   const key = userScopedKey("continue");
   if (key) {
     setJSON(key, map);
-  } else {
-    setJSON(STORAGE.fallbackContinue, map);
+    return;
   }
+  setJSON(STORAGE.fallbackContinue, map);
 }
 
 function getRecentlyViewed() {
@@ -447,12 +536,13 @@ function getRecentlyViewed() {
 }
 
 function setRecentlyViewed(list) {
+  const trimmed = list.slice(0, 50);
   const key = userScopedKey("recent");
   if (key) {
-    setJSON(key, list.slice(0, 40));
-  } else {
-    setJSON(STORAGE.fallbackRecent, list.slice(0, 40));
+    setJSON(key, trimmed);
+    return;
   }
+  setJSON(STORAGE.fallbackRecent, trimmed);
 }
 
 function toast(message) {
@@ -496,8 +586,68 @@ function runPendingAction() {
   action();
 }
 
-function movieByTitle(title) {
-  return MOVIES.find((movie) => movie.title === title);
+function escapeHtml(input) {
+  return String(input || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function encodeTitle(title) {
+  return encodeURIComponent(title || "");
+}
+
+function decodeTitle(token) {
+  try {
+    return decodeURIComponent(token || "");
+  } catch (_error) {
+    return token || "";
+  }
+}
+
+function uniqueBy(list, keyFn) {
+  const seen = new Set();
+  const output = [];
+  for (const item of list) {
+    const key = keyFn(item);
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    output.push(item);
+  }
+  return output;
+}
+
+function normText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function updateStatusBadge(node, label, type = "neutral") {
+  if (!node) {
+    return;
+  }
+  node.textContent = label;
+  node.classList.remove("neutral", "success", "error", "warn");
+  node.classList.add(type);
+}
+
+function updateLandingStats() {
+  if (el.landingMovieCount) {
+    const movieCount = MOVIES.length + state.discoverMovies.length;
+    el.landingMovieCount.textContent = `${movieCount}+`;
+  }
+  if (el.landingNewsCount) {
+    el.landingNewsCount.textContent = `${state.news.length || 0}+`;
+  }
+  if (el.landingSportsCount) {
+    el.landingSportsCount.textContent = `${state.sportsVideos.length || 0}+`;
+  }
 }
 
 function trailerFromVideoId(videoId) {
@@ -505,38 +655,149 @@ function trailerFromVideoId(videoId) {
 }
 
 function videoIdFromEmbed(embedUrl) {
-  const match = embedUrl.match(/embed\/([^?&]+)/);
+  const match = String(embedUrl || "").match(/embed\/([^?&]+)/);
   return match ? match[1] : null;
+}
+
+function movieCatalog() {
+  return [...MOVIES, ...Object.values(state.dynamicMovies)];
+}
+
+function movieByTitle(title) {
+  const match = movieCatalog().find((movie) => movie.title === title);
+  return match || null;
+}
+
+function registerDynamicMovies(movies) {
+  movies.forEach((movie) => {
+    state.dynamicMovies[movie.title] = movie;
+  });
+}
+
+function tmdbToMovie(item) {
+  const title = item.title || item.name || "Untitled Movie";
+  const poster = item.poster_path ? `${TMDB_IMAGE_BASE}${item.poster_path}` : MOVIE_PLACEHOLDER;
+  const backdrop = item.backdrop_path ? `${TMDB_IMAGE_BASE}${item.backdrop_path}` : poster;
+  const category =
+    item.original_language === "hi"
+      ? "Bollywood"
+      : item.title?.includes("Avengers") || item.title?.includes("Spider-Man")
+      ? "Marvel"
+      : "Hollywood";
+  const rating = Number(item.vote_average || 0);
+  return {
+    title,
+    poster,
+    backdrop,
+    trailer: "",
+    rating: rating > 0 ? rating : 7,
+    category,
+    moods: [rating >= 7.8 ? "Mind-blowing" : "Action", rating >= 6.5 ? "Fun" : "Action"],
+    tags: [
+      rating >= 7 ? "Top10" : "Action",
+      category === "Marvel" ? "Action" : rating >= 7.8 ? "Mind" : "Action"
+    ],
+    description: item.overview || "Description unavailable.",
+    tmdbId: item.id
+  };
+}
+
+function candidateTrailerScore(item) {
+  const text = `${item.snippet?.title || ""} ${item.snippet?.description || ""}`.toLowerCase();
+  let score = 0;
+  if (text.includes("official")) score += 40;
+  if (text.includes("trailer")) score += 35;
+  if (text.includes("final trailer")) score += 15;
+  if (text.includes("teaser")) score -= 35;
+  if (text.includes("promo") || text.includes("clip")) score -= 25;
+  if (text.includes("fan made") || text.includes("reaction")) score -= 60;
+  if (text.includes("sony pictures") || text.includes("marvel") || text.includes("warner bros")) score += 20;
+  if ((item.snippet?.title || "").split(" ").length < 2) score -= 10;
+  return score;
 }
 
 async function resolveMovieTrailer(movie) {
   if (state.trailerCache[movie.title]) {
     return state.trailerCache[movie.title];
   }
-  const query = `${movie.title} official trailer`;
-  const url = `${YOUTUBE_BASE}?part=snippet&type=video&maxResults=8&q=${encodeURIComponent(
-    query
-  )}&key=${YOUTUBE_API_KEY}`;
-
-  try {
-    const data = await fetchJSONWithFallback(url);
-    const items = (data.items || []).filter((item) => item.id?.videoId);
-    const selected =
-      items.find((item) => {
-        const title = (item.snippet?.title || "").toLowerCase();
-        return title.includes("official") && title.includes("trailer");
-      }) ||
-      items.find((item) => (item.snippet?.title || "").toLowerCase().includes("trailer")) ||
-      items[0];
-
-    const videoId = selected?.id?.videoId || videoIdFromEmbed(movie.trailer);
-    const embed = videoId ? trailerFromVideoId(videoId) : movie.trailer;
-    state.trailerCache[movie.title] = embed;
-    return embed;
-  } catch (_error) {
-    state.trailerCache[movie.title] = movie.trailer;
-    return movie.trailer;
+  const queries = [`${movie.title} official trailer`, `${movie.title} trailer`];
+  for (const query of queries) {
+    const url = `${YOUTUBE_BASE}?part=snippet&type=video&videoEmbeddable=true&safeSearch=strict&relevanceLanguage=en&maxResults=12&q=${encodeURIComponent(
+      query
+    )}&key=${YOUTUBE_API_KEY}`;
+    try {
+      const data = await fetchJSONWithFallback(url, { cacheKey: `yt.trailer.${query}` });
+      const items = (data.items || [])
+        .filter((item) => item.id?.videoId)
+        .sort((a, b) => candidateTrailerScore(b) - candidateTrailerScore(a));
+      const selected = items[0];
+      if (selected?.id?.videoId) {
+        const embed = trailerFromVideoId(selected.id.videoId);
+        state.trailerCache[movie.title] = embed;
+        return embed;
+      }
+    } catch (_error) {
+      // continue with next query
+    }
   }
+  const fallbackVideoId = videoIdFromEmbed(movie.trailer);
+  const fallback = fallbackVideoId ? trailerFromVideoId(fallbackVideoId) : movie.trailer;
+  state.trailerCache[movie.title] = fallback;
+  return fallback;
+}
+
+async function enrichMovieAssets(movie) {
+  const cached = state.movieAssetCache[movie.title];
+  if (cached?.poster) {
+    movie.poster = cached.poster;
+    movie.backdrop = cached.backdrop || cached.poster;
+    return;
+  }
+  try {
+    const url = `${TMDB_BASE}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(
+      movie.title
+    )}&include_adult=false`;
+    const data = await fetchJSONWithFallback(url, { cacheKey: `tmdb.search.${movie.title}` });
+    const results = data.results || [];
+    const titleNorm = normText(movie.title);
+    const best = results
+      .map((result) => {
+        const exact = normText(result.title) === titleNorm ? 40 : 0;
+        const popularity = Math.min((result.popularity || 0) / 5, 20);
+        const votes = Math.min((result.vote_count || 0) / 150, 20);
+        return { result, score: exact + popularity + votes };
+      })
+      .sort((a, b) => b.score - a.score)[0]?.result;
+    if (best?.poster_path) {
+      const poster = `${TMDB_IMAGE_BASE}${best.poster_path}`;
+      const backdrop = best.backdrop_path ? `${TMDB_IMAGE_BASE}${best.backdrop_path}` : poster;
+      movie.poster = poster;
+      movie.backdrop = backdrop;
+      state.movieAssetCache[movie.title] = { poster, backdrop };
+      setJSON(STORAGE.movieAssets, state.movieAssetCache);
+    }
+  } catch (_error) {
+    // keep original curated assets if enrichment fails
+  }
+}
+
+async function hydrateMovieAssets() {
+  MOVIES.forEach((movie) => {
+    const cached = state.movieAssetCache[movie.title];
+    if (cached?.poster) {
+      movie.poster = cached.poster;
+      movie.backdrop = cached.backdrop || cached.poster;
+    }
+  });
+  await Promise.allSettled(MOVIES.map((movie) => enrichMovieAssets(movie)));
+  updateHero(state.heroMovie);
+  renderMovieRows();
+  renderMoodResults(state.mood);
+  renderTop10();
+  renderSmartPicks();
+  renderTopPicks();
+  renderContinueWatching();
+  renderMyList();
 }
 
 function applySection(section) {
@@ -563,7 +824,7 @@ function applySection(section) {
       : section === "sports"
       ? "Sports Highlights"
       : "My List";
-  el.myListBtn.classList.toggle("hidden", section !== "movies");
+  el.myListBtn.classList.toggle("hidden", !(section === "movies" || section === "mylist"));
 
   if (section === "movies") {
     el.moviesView.classList.remove("hidden");
@@ -582,10 +843,13 @@ function applySection(section) {
 
 function updateHero(movie) {
   state.heroMovie = movie;
+  const inList = getWatchlist().includes(movie.title);
   el.movieHeroTitle.textContent = movie.title;
-  el.movieHeroMeta.textContent = `${movie.category} • ⭐ ${movie.rating.toFixed(1)}/10`;
+  el.movieHeroMeta.textContent = `${movie.category} • ⭐ ${Number(movie.rating || 0).toFixed(1)}/10`;
   el.movieHeroDescription.textContent = movie.description;
-  el.movieHeroBackdrop.style.backgroundImage = `url(${movie.poster})`;
+  el.heroWatchlistBtn.textContent = inList ? "− In Watchlist" : "+ Add to Watchlist";
+  const heroImage = movie.backdrop || movie.poster || MOVIE_PLACEHOLDER;
+  el.movieHeroBackdrop.style.backgroundImage = `url(${heroImage})`;
   resolveMovieTrailer(movie).then((embed) => {
     const sep = embed.includes("?") ? "&" : "?";
     el.movieHeroTrailer.innerHTML = `
@@ -601,12 +865,15 @@ function updateHero(movie) {
 function movieCardTemplate(movie, options = {}) {
   const inList = getWatchlist().includes(movie.title);
   const progress = getContinueWatching()[movie.title] || 0;
+  const token = encodeTitle(movie.title);
   return `
-    <article class="movie-card reveal" data-movie-title="${movie.title}">
-      <img loading="lazy" src="${movie.poster}" alt="${movie.title}" />
+    <article class="movie-card reveal" data-movie-title="${token}">
+      <img loading="lazy" src="${movie.poster || MOVIE_PLACEHOLDER}" alt="${escapeHtml(
+    movie.title
+  )}" onerror="this.src='${MOVIE_PLACEHOLDER}'" />
       <div class="movie-card-info">
-        <h4>${movie.title}</h4>
-        <p>⭐ ${movie.rating.toFixed(1)}</p>
+        <h4>${escapeHtml(movie.title)}</h4>
+        <p>⭐ ${Number(movie.rating || 0).toFixed(1)}</p>
       </div>
       ${
         options.showProgress
@@ -618,14 +885,14 @@ function movieCardTemplate(movie, options = {}) {
       }
       <div class="movie-hover">
         <div class="movie-actions">
-          <button class="mini-btn" data-action="play-movie" data-title="${movie.title}">▶ Trailer</button>
-          <button class="mini-btn" data-action="watchlist" data-title="${movie.title}">
+          <button class="mini-btn" data-action="play-movie" data-title="${token}">▶ Trailer</button>
+          <button class="mini-btn" data-action="watchlist" data-title="${token}">
             ${inList ? "− Watchlist" : "+ Watchlist"}
           </button>
-          <button class="mini-btn" data-action="rate" data-title="${movie.title}">⭐ Rate</button>
-          <button class="mini-btn" data-action="like" data-title="${movie.title}">👍 Like</button>
+          <button class="mini-btn" data-action="rate" data-title="${token}">⭐ Rate</button>
+          <button class="mini-btn" data-action="like" data-title="${token}">👍 Like</button>
         </div>
-        <div class="hover-preview" data-preview-title="${movie.title}"></div>
+        <div class="hover-preview" data-preview-title="${token}"></div>
       </div>
     </article>
   `;
@@ -645,20 +912,28 @@ function renderMovieSkeletons() {
     el.hollyGrid,
     el.actionGrid,
     el.mindGrid,
-    el.myListGrid
+    el.discoverGrid,
+    el.myListGrid,
+    el.myRecentGrid
   ].forEach((node) => {
-    node.innerHTML = skeleton;
+    if (node) {
+      node.innerHTML = skeleton;
+    }
   });
 }
 
 function renderTop10() {
-  const top = [...MOVIES].sort((a, b) => b.rating - a.rating).slice(0, 10);
+  const top = [...movieCatalog()]
+    .sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
+    .slice(0, 10);
   el.top10List.innerHTML = top
     .map(
       (movie, idx) => `
       <li>
         <span>#${idx + 1}</span>
-        <button data-action="open-movie" data-title="${movie.title}">${movie.title}</button>
+        <button data-action="open-movie" data-title="${encodeTitle(movie.title)}">${escapeHtml(
+        movie.title
+      )}</button>
       </li>
     `
     )
@@ -666,11 +941,13 @@ function renderTop10() {
 }
 
 function renderMovieRows() {
-  const marvel = MOVIES.filter((movie) => movie.category === "Marvel");
-  const bolly = MOVIES.filter((movie) => movie.category === "Bollywood");
-  const holly = MOVIES.filter((movie) => movie.category === "Hollywood");
-  const action = MOVIES.filter((movie) => movie.tags.includes("Action"));
-  const mind = MOVIES.filter((movie) => movie.tags.includes("Mind"));
+  const allMovies = movieCatalog();
+  const marvel = allMovies.filter((movie) => movie.category === "Marvel");
+  const bolly = allMovies.filter((movie) => movie.category === "Bollywood");
+  const holly = allMovies.filter((movie) => movie.category === "Hollywood");
+  const action = allMovies.filter((movie) => movie.tags?.includes("Action"));
+  const mind = allMovies.filter((movie) => movie.tags?.includes("Mind"));
+
   el.mcuGrid.innerHTML = marvel.map((movie) => movieCardTemplate(movie)).join("");
   el.bollyGrid.innerHTML = bolly.map((movie) => movieCardTemplate(movie)).join("");
   el.hollyGrid.innerHTML = holly.map((movie) => movieCardTemplate(movie)).join("");
@@ -678,13 +955,42 @@ function renderMovieRows() {
   el.mindGrid.innerHTML = mind.map((movie) => movieCardTemplate(movie)).join("");
 }
 
+function renderDiscoverGrid(list = state.discoverMovies) {
+  if (!el.discoverGrid) {
+    return;
+  }
+  el.discoverGrid.innerHTML = list.length
+    ? list.map((movie) => movieCardTemplate(movie)).join("")
+    : `<p class="empty-text">Discover feed loading...</p>`;
+}
+
 function renderMyList() {
+  const user = getCurrentUser();
   const list = getWatchlist()
     .map(movieByTitle)
     .filter(Boolean);
+  const recent = getRecentlyViewed()
+    .map(movieByTitle)
+    .filter(Boolean)
+    .slice(0, 12);
+
+  if (el.myListStats) {
+    if (!user) {
+      el.myListStats.textContent = "Login required to maintain personal watchlist.";
+    } else {
+      el.myListStats.textContent = `${list.length} saved in My List • ${recent.length} recently viewed`;
+    }
+  }
+
   el.myListGrid.innerHTML = list.length
     ? list.map((movie) => movieCardTemplate(movie)).join("")
-    : `<p class="empty-text">Login and add movies to your watchlist.</p>`;
+    : `<p class="empty-text">${user ? "No movies in your list yet." : "Login and add movies to your watchlist."}</p>`;
+
+  if (el.myRecentGrid) {
+    el.myRecentGrid.innerHTML = recent.length
+      ? recent.map((movie) => movieCardTemplate(movie, { showProgress: true })).join("")
+      : `<p class="empty-text">Recently watched movies will appear here.</p>`;
+  }
 }
 
 function renderContinueWatching() {
@@ -692,7 +998,7 @@ function renderContinueWatching() {
   const list = Object.keys(map)
     .map(movieByTitle)
     .filter(Boolean)
-    .slice(0, 8);
+    .slice(0, 12);
   el.continueGrid.innerHTML = list.length
     ? list.map((movie) => movieCardTemplate(movie, { showProgress: true })).join("")
     : `<p class="empty-text">Start watching to build progress.</p>`;
@@ -717,17 +1023,22 @@ function renderSmartPicks() {
     .filter(Boolean);
 
   if (!likedMovies.length) {
-    el.smartPicksGrid.innerHTML = MOVIES.slice(0, 8).map((movie) => movieCardTemplate(movie)).join("");
+    el.smartPicksGrid.innerHTML = movieCatalog()
+      .slice(0, 12)
+      .map((movie) => movieCardTemplate(movie))
+      .join("");
     return;
   }
 
   const categories = new Set(likedMovies.map((movie) => movie.category));
-  const moods = new Set(likedMovies.flatMap((movie) => movie.moods));
-  const picks = MOVIES.filter(
-    (movie) =>
-      !likes[movie.title] &&
-      (categories.has(movie.category) || movie.moods.some((mood) => moods.has(mood)))
-  ).slice(0, 10);
+  const moods = new Set(likedMovies.flatMap((movie) => movie.moods || []));
+  const picks = movieCatalog()
+    .filter(
+      (movie) =>
+        !likes[movie.title] &&
+        (categories.has(movie.category) || (movie.moods || []).some((mood) => moods.has(mood)))
+    )
+    .slice(0, 12);
 
   el.smartPicksGrid.innerHTML = picks.length
     ? picks.map((movie) => movieCardTemplate(movie)).join("")
@@ -736,7 +1047,7 @@ function renderSmartPicks() {
 
 function renderMoodResults(mood) {
   state.mood = mood;
-  const list = MOVIES.filter((movie) => movie.moods.includes(mood));
+  const list = movieCatalog().filter((movie) => (movie.moods || []).includes(mood));
   el.moodGrid.innerHTML = list.length
     ? list.map((movie) => movieCardTemplate(movie)).join("")
     : `<p class="empty-text">No movies for this mood.</p>`;
@@ -757,6 +1068,7 @@ function updateContinue(title, amount = 8) {
 async function openTrailer(title) {
   const movie = movieByTitle(title);
   if (!movie) {
+    toast("Trailer unavailable");
     return;
   }
   const embed = await resolveMovieTrailer(movie);
@@ -766,27 +1078,31 @@ async function openTrailer(title) {
   updateContinue(title, 10);
   trackRecent(title);
   renderContinueWatching();
+  renderMyList();
 }
 
 async function openMovieModal(title) {
   const movie = movieByTitle(title);
   if (!movie) {
+    toast("Movie details unavailable");
     return;
   }
   const inList = getWatchlist().includes(title);
   const selected = Number(getRatings()[title] || 0);
   const embed = await resolveMovieTrailer(movie);
   el.movieModalBody.innerHTML = `
-    <div class="details-hero" style="background-image:url('${movie.poster}')"></div>
+    <div class="details-hero" style="background-image:url('${movie.backdrop || movie.poster || MOVIE_PLACEHOLDER}')"></div>
     <div class="details-content">
-      <img class="details-poster" src="${movie.poster}" alt="${movie.title}" />
+      <img class="details-poster" src="${movie.poster || MOVIE_PLACEHOLDER}" alt="${escapeHtml(
+    movie.title
+  )}" onerror="this.src='${MOVIE_PLACEHOLDER}'" />
       <div>
-        <h2>${movie.title}</h2>
-        <p class="details-meta">${movie.category} • ⭐ ${movie.rating.toFixed(1)}</p>
-        <p>${movie.description}</p>
+        <h2>${escapeHtml(movie.title)}</h2>
+        <p class="details-meta">${escapeHtml(movie.category)} • ⭐ ${Number(movie.rating || 0).toFixed(1)}</p>
+        <p>${escapeHtml(movie.description || "No description available.")}</p>
         <div class="details-actions">
-          <button class="primary-btn" data-action="play-movie" data-title="${movie.title}">▶ Play</button>
-          <button class="ghost-btn" data-action="watchlist" data-title="${movie.title}">
+          <button class="primary-btn" data-action="play-movie" data-title="${encodeTitle(movie.title)}">▶ Play</button>
+          <button class="ghost-btn" data-action="watchlist" data-title="${encodeTitle(movie.title)}">
             ${inList ? "− Remove Watchlist" : "+ Add Watchlist"}
           </button>
         </div>
@@ -794,9 +1110,9 @@ async function openMovieModal(title) {
           ${[1, 2, 3, 4, 5]
             .map(
               (star) =>
-                `<button class="rate-btn ${selected >= star ? "active" : ""}" data-rate="${star}" data-title="${
+                `<button class="rate-btn ${selected >= star ? "active" : ""}" data-rate="${star}" data-title="${encodeTitle(
                   movie.title
-                }">★</button>`
+                )}">★</button>`
             )
             .join("")}
         </div>
@@ -810,6 +1126,7 @@ async function openMovieModal(title) {
   trackRecent(title);
   updateContinue(title, 4);
   renderContinueWatching();
+  renderMyList();
 }
 
 function toggleWatchlist(title) {
@@ -828,6 +1145,8 @@ function toggleWatchlist(title) {
   renderMyList();
   renderMovieRows();
   renderSmartPicks();
+  renderDiscoverGrid();
+  updateHero(state.heroMovie);
 }
 
 function likeMovie(title) {
@@ -858,37 +1177,107 @@ function rateMovie(title, rating) {
   ratings[title] = rating;
   setRatings(ratings);
   toast("Rating saved");
-  openMovieModal(title);
+  openMovieModal(title).catch(() => toast("Failed to open movie"));
 }
 
 function quickPlay() {
-  const random = MOVIES[Math.floor(Math.random() * MOVIES.length)];
+  const allMovies = movieCatalog();
+  const random = allMovies[Math.floor(Math.random() * allMovies.length)];
+  if (!random) {
+    return;
+  }
   if (
     !ensureAuth(() => {
-      openTrailer(random.title);
+      openTrailer(random.title).catch(() => toast("Trailer unavailable"));
     })
   ) {
     return;
   }
-  openTrailer(random.title);
+  openTrailer(random.title).catch(() => toast("Trailer unavailable"));
 }
 
-function newsUrlByFilter(filter) {
+function newsUrlsByFilter(filter) {
+  const base = `https://gnews.io/api/v4/top-headlines?lang=en&max=25&apikey=${NEWS_API_KEY}`;
   if (filter === "tech") {
-    return `https://gnews.io/api/v4/top-headlines?topic=technology&lang=en&country=in&max=12&apikey=${NEWS_API_KEY}`;
+    return [
+      `${base}&topic=technology`,
+      `${base}&topic=technology&country=us`,
+      `${base}&topic=technology&country=gb`
+    ];
   }
   if (filter === "business") {
-    return `https://gnews.io/api/v4/top-headlines?topic=business&lang=en&country=in&max=12&apikey=${NEWS_API_KEY}`;
+    return [
+      `${base}&topic=business`,
+      `${base}&topic=business&country=us`,
+      `${base}&topic=business&country=gb`
+    ];
   }
   if (filter === "science") {
-    return `https://gnews.io/api/v4/top-headlines?topic=science&lang=en&country=in&max=12&apikey=${NEWS_API_KEY}`;
+    return [
+      `${base}&topic=science`,
+      `${base}&topic=science&country=us`,
+      `${base}&topic=science&country=gb`
+    ];
   }
-  return NEWS_URL;
+  return [NEWS_URL, `${base}&country=us`, `${base}&country=gb`];
+}
+
+function isLikelyEnglish(text) {
+  const value = String(text || "").trim();
+  if (!value) {
+    return false;
+  }
+  const nonLatin = (value.match(/[^\u0000-\u00ff]/g) || []).length;
+  return nonLatin / value.length < 0.18;
+}
+
+function toNewsCardShape(article) {
+  return {
+    title: article.title || "Untitled",
+    description: article.description || "",
+    image: article.image || NEWS_PLACEHOLDER,
+    url: article.url || "#",
+    source: article.source || { name: "Unknown Source" },
+    publishedAt: article.publishedAt || new Date().toISOString()
+  };
 }
 
 async function fetchNews(filter = "all") {
-  const data = await fetchJSONWithFallback(newsUrlByFilter(filter));
-  state.news = data.articles || [];
+  updateStatusBadge(el.newsStatusBadge, "Loading", "neutral");
+  updateStatusBadge(el.landingNewsBadge, "Loading", "neutral");
+
+  const urls = newsUrlsByFilter(filter);
+  const collected = [];
+
+  for (const url of urls) {
+    try {
+      const data = await fetchJSONWithFallback(url, { cacheKey: `news.${filter}.${url}` });
+      const filtered = (data.articles || [])
+        .filter((article) => article.url && article.title)
+        .filter((article) => isLikelyEnglish(`${article.title} ${article.description || ""}`))
+        .map(toNewsCardShape);
+      collected.push(...filtered);
+      if (collected.length >= 40) {
+        break;
+      }
+    } catch (_error) {
+      // continue next fallback endpoint
+    }
+  }
+
+  const uniqueNews = uniqueBy(collected, (article) => `${article.title}-${article.url}`).slice(0, 60);
+  if (!uniqueNews.length) {
+    updateStatusBadge(el.newsStatusBadge, "No Feed", "error");
+    updateStatusBadge(el.landingNewsBadge, "No Feed", "error");
+    state.news = [];
+    return;
+  }
+
+  state.news = uniqueNews;
+  state.newsDisplayCount = 18;
+  updateStatusBadge(el.newsStatusBadge, "Live Global Feed", "success");
+  updateStatusBadge(el.landingNewsBadge, "Live", "success");
+  updateLandingStats();
 }
 
 function formatDate(dateStr) {
@@ -900,18 +1289,19 @@ function formatDate(dateStr) {
 }
 
 function renderNews(list = state.news) {
-  el.newsGrid.innerHTML = list.length
-    ? list
+  const visible = list.slice(0, state.newsDisplayCount);
+  el.newsGrid.innerHTML = visible.length
+    ? visible
         .map(
           (article) => `
       <article class="news-card reveal">
-        <img loading="lazy" src="${article.image || "https://via.placeholder.com/800x450?text=News"}" alt="${
+        <img loading="lazy" src="${article.image || NEWS_PLACEHOLDER}" alt="${escapeHtml(
             article.title || "News"
-          }" />
+          )}" onerror="this.src='${NEWS_PLACEHOLDER}'" />
         <div class="news-card-content">
-          <h3>${article.title || "Untitled"}</h3>
+          <h3>${escapeHtml(article.title || "Untitled")}</h3>
           <div class="news-meta">
-            <span>${article.source?.name || "Unknown Source"}</span>
+            <span>${escapeHtml(article.source?.name || "Unknown Source")}</span>
             <span>${formatDate(article.publishedAt)}</span>
           </div>
           <a class="read-btn" href="${article.url}" target="_blank" rel="noopener noreferrer">Read Full Story</a>
@@ -920,20 +1310,17 @@ function renderNews(list = state.news) {
     `
         )
         .join("")
-    : `<p class="empty-text">No news found.</p>`;
+    : `<p class="empty-text">No global English news found.</p>`;
+  revealOnScroll();
 }
 
-function filterNews(category) {
-  state.newsFilter = category;
-  if (category === "all") {
-    renderNews(state.news);
-    return;
-  }
+function filterNewsByTerm(term) {
   const filtered = state.news.filter((article) => {
     const text = `${article.title || ""} ${article.description || ""}`.toLowerCase();
-    return text.includes(category);
+    return text.includes(term.toLowerCase());
   });
   renderNews(filtered);
+  return filtered;
 }
 
 function renderNewsSkeletons() {
@@ -942,36 +1329,72 @@ function renderNewsSkeletons() {
     .join("");
 }
 
-async function fetchSports(query) {
-  const url = `${YOUTUBE_BASE}?part=snippet&q=${encodeURIComponent(
+const NON_ENGLISH_VIDEO_RE =
+  /hindi|हिंदी|हिन्दी|தமிழ்|తెలుగు|ಕನ್ನಡ|മലയാളം|বাংলা|اردو|full hindi|हाइलाइट्स|हाइलाइट|हिन्दी कमेंट्री/i;
+const SPORTS_SPAM_RE = /prediction|dream11|fantasy|live stream|match live now|betting/i;
+
+function isEnglishSportsItem(item) {
+  const title = item.snippet?.title || "";
+  const description = item.snippet?.description || "";
+  const text = `${title} ${description}`;
+  if (!item.id?.videoId) {
+    return false;
+  }
+  if (NON_ENGLISH_VIDEO_RE.test(text) || SPORTS_SPAM_RE.test(text.toLowerCase())) {
+    return false;
+  }
+  return isLikelyEnglish(text);
+}
+
+async function fetchSports(query, cacheKey = query) {
+  updateStatusBadge(el.sportsStatusBadge, "Loading", "neutral");
+  updateStatusBadge(el.landingSportsBadge, "Loading", "neutral");
+
+  const url = `${YOUTUBE_BASE}?part=snippet&type=video&videoEmbeddable=true&safeSearch=strict&relevanceLanguage=en&maxResults=36&order=date&q=${encodeURIComponent(
     query
-  )}&maxResults=12&key=${YOUTUBE_API_KEY}`;
-  const data = await fetchJSONWithFallback(url);
-  state.sportsVideos = (data.items || []).filter((item) => item.id?.videoId);
+  )}&key=${YOUTUBE_API_KEY}`;
+
+  const data = await fetchJSONWithFallback(url, { cacheKey: `sports.${cacheKey}` });
+  const filtered = (data.items || []).filter(isEnglishSportsItem);
+  state.sportsVideos = filtered;
+  state.sportsDisplayCount = 24;
+
+  updateStatusBadge(el.sportsStatusBadge, filtered.length ? "Live Highlights (EN)" : "No Feed", filtered.length ? "success" : "warn");
+  updateStatusBadge(el.landingSportsBadge, filtered.length ? "Live" : "No Feed", filtered.length ? "success" : "warn");
+  updateLandingStats();
 }
 
 function sportsCardTemplate(item) {
   const thumb =
-    item.snippet?.thumbnails?.high?.url || item.snippet?.thumbnails?.medium?.url || "";
+    item.snippet?.thumbnails?.high?.url ||
+    item.snippet?.thumbnails?.medium?.url ||
+    SPORTS_PLACEHOLDER;
   const videoId = item.id.videoId;
   return `
     <article class="sports-card reveal">
-      <img loading="lazy" src="${thumb}" alt="${item.snippet.title}" />
+      <img loading="lazy" src="${thumb}" alt="${escapeHtml(
+    item.snippet?.title || "Sports video"
+  )}" onerror="this.src='${SPORTS_PLACEHOLDER}'" />
       <div class="sports-card-content">
-        <h3>${item.snippet.title}</h3>
+        <h3>${escapeHtml(item.snippet?.title || "Sports video")}</h3>
         <button class="read-btn" data-action="play-sport" data-video-id="${videoId}">▶ Play</button>
       </div>
     </article>
   `;
 }
 
-function renderSports() {
-  el.sportsTopGrid.innerHTML = state.sportsVideos.slice(0, 6).map(sportsCardTemplate).join("");
-  el.sportsPlayerGrid.innerHTML = state.sportsVideos.slice(6, 12).map(sportsCardTemplate).join("");
-  if (!state.sportsVideos.length) {
-    el.sportsTopGrid.innerHTML = `<p class="empty-text">No highlights found.</p>`;
-    el.sportsPlayerGrid.innerHTML = `<p class="empty-text">No highlights found.</p>`;
-  }
+function renderSports(list = state.sportsVideos) {
+  const visible = list.slice(0, state.sportsDisplayCount);
+  const split = Math.ceil(visible.length / 2);
+  const top = visible.slice(0, split);
+  const player = visible.slice(split);
+  el.sportsTopGrid.innerHTML = top.length
+    ? top.map(sportsCardTemplate).join("")
+    : `<p class="empty-text">No highlights found.</p>`;
+  el.sportsPlayerGrid.innerHTML = player.length
+    ? player.map(sportsCardTemplate).join("")
+    : `<p class="empty-text">No additional highlights found.</p>`;
+  revealOnScroll();
 }
 
 function renderSportsSkeletons() {
@@ -982,8 +1405,173 @@ function renderSportsSkeletons() {
   el.sportsPlayerGrid.innerHTML = skeleton;
 }
 
+async function loadMoreDiscoverMovies() {
+  if (!el.discoverGrid) {
+    return;
+  }
+  const page = state.discoverPage;
+  const sourceUrl =
+    page % 2 === 1
+      ? `${TMDB_BASE}/movie/popular?api_key=${TMDB_API_KEY}&page=${Math.ceil(page / 2)}`
+      : `${TMDB_BASE}/trending/movie/week?api_key=${TMDB_API_KEY}&page=${Math.ceil(page / 2)}`;
+
+  try {
+    const data = await fetchJSONWithFallback(sourceUrl, { cacheKey: `discover.page.${page}` });
+    const mapped = (data.results || [])
+      .filter((movie) => movie.poster_path)
+      .map(tmdbToMovie)
+      .slice(0, 24);
+    registerDynamicMovies(mapped);
+    state.discoverMovies = uniqueBy([...state.discoverMovies, ...mapped], (movie) =>
+      normText(movie.title)
+    );
+    state.discoverPage += 1;
+    renderDiscoverGrid();
+    renderTop10();
+    updateLandingStats();
+  } catch (_error) {
+    toast("Movie discovery refresh failed");
+  }
+}
+
+async function searchMoviesRemote(term) {
+  const trimmed = term.trim();
+  if (trimmed.length < 2) {
+    state.movieSearchResults = [];
+    renderSearchSuggestions([]);
+    return;
+  }
+  const url = `${TMDB_BASE}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(
+    trimmed
+  )}&include_adult=false`;
+  try {
+    const data = await fetchJSONWithFallback(url, { cacheKey: `tmdb.search.live.${trimmed}` });
+    const remoteMovies = (data.results || [])
+      .filter((movie) => movie.poster_path)
+      .map(tmdbToMovie)
+      .slice(0, 24);
+    registerDynamicMovies(remoteMovies);
+    state.movieSearchResults = remoteMovies;
+    if ((state.section === "movies" || state.section === "mylist") && state.currentSearchTerm.trim()) {
+      renderMovieSearchResults(state.currentSearchTerm);
+    }
+    renderSuggestionsForTerm(trimmed);
+  } catch (_error) {
+    renderSuggestionsForTerm(trimmed);
+  }
+}
+
+function renderMovieSearchResults(term) {
+  const query = term.trim().toLowerCase();
+  const pool = uniqueBy([...movieCatalog(), ...state.discoverMovies, ...state.movieSearchResults], (movie) =>
+    normText(movie.title)
+  );
+  const filtered = pool
+    .filter((movie) => {
+      const hay = `${movie.title} ${movie.category} ${(movie.tags || []).join(" ")} ${(movie.description || "").slice(0, 120)}`.toLowerCase();
+      return hay.includes(query);
+    })
+    .slice(0, 48);
+
+  if (state.section === "mylist") {
+    const wl = new Set(getWatchlist());
+    const scoped = filtered.filter((movie) => wl.has(movie.title));
+    el.myListGrid.innerHTML = scoped.length
+      ? scoped.map((movie) => movieCardTemplate(movie)).join("")
+      : `<p class="empty-text">No watchlist matches for "${escapeHtml(term)}".</p>`;
+    return;
+  }
+
+  if (state.section === "movies") {
+    el.discoverGrid.innerHTML = filtered.length
+      ? filtered.map((movie) => movieCardTemplate(movie)).join("")
+      : `<p class="empty-text">No movie match found for "${escapeHtml(term)}".</p>`;
+  }
+}
+
+function renderSearchSuggestions(items) {
+  if (!el.searchSuggestions) {
+    return;
+  }
+  if (!items.length) {
+    el.searchSuggestions.classList.add("hidden");
+    el.searchSuggestions.innerHTML = "";
+    return;
+  }
+  el.searchSuggestions.innerHTML = items
+    .slice(0, 8)
+    .map((item) => {
+      const type = item.type || "movie";
+      if (type === "news") {
+        return `
+          <button class="suggestion-item" data-suggestion="news" data-url="${encodeURIComponent(
+            item.url
+          )}">
+            <strong>🌍 ${escapeHtml(item.title)}</strong>
+            <small>${escapeHtml(item.subtitle || "World News")}</small>
+          </button>
+        `;
+      }
+      if (type === "sports") {
+        return `
+          <button class="suggestion-item" data-suggestion="sports" data-video-id="${escapeHtml(
+            item.videoId
+          )}">
+            <strong>⚽ ${escapeHtml(item.title)}</strong>
+            <small>${escapeHtml(item.subtitle || "Sports Highlight")}</small>
+          </button>
+        `;
+      }
+      return `
+        <button class="suggestion-item" data-suggestion="movie" data-title="${encodeTitle(item.title)}">
+          <strong>🎬 ${escapeHtml(item.title)}</strong>
+          <small>${escapeHtml(item.subtitle || item.category || "Movie")}</small>
+        </button>
+      `;
+    })
+    .join("");
+  el.searchSuggestions.classList.remove("hidden");
+}
+
+function renderSuggestionsForTerm(term) {
+  const query = term.trim().toLowerCase();
+  if (!query) {
+    renderSearchSuggestions([]);
+    return;
+  }
+  if (state.section === "news") {
+    const items = filterNewsByTerm(query).slice(0, 8).map((article) => ({
+      type: "news",
+      title: article.title,
+      subtitle: article.source?.name || "World News",
+      url: article.url
+    }));
+    renderSearchSuggestions(items);
+    return;
+  }
+  if (state.section === "sports") {
+    const items = state.sportsVideos
+      .filter((item) => (item.snippet?.title || "").toLowerCase().includes(query))
+      .slice(0, 8)
+      .map((item) => ({
+        type: "sports",
+        title: item.snippet?.title || "Sports video",
+        subtitle: item.snippet?.channelTitle || "YouTube",
+        videoId: item.id?.videoId
+      }));
+    renderSearchSuggestions(items);
+    return;
+  }
+  const localMovies = uniqueBy([...movieCatalog(), ...state.movieSearchResults], (movie) => normText(movie.title))
+    .filter((movie) => movie.title.toLowerCase().includes(query))
+    .slice(0, 8)
+    .map((movie) => ({ type: "movie", title: movie.title, subtitle: movie.category }));
+  renderSearchSuggestions(localMovies);
+}
+
 function runSearch(raw) {
-  const term = raw.trim().toLowerCase();
+  const term = raw.trim();
+  state.currentSearchTerm = term;
   if (!term) {
     if (state.section === "movies" || state.section === "mylist") {
       renderMovieRows();
@@ -992,66 +1580,39 @@ function runSearch(raw) {
       renderTopPicks();
       renderContinueWatching();
       renderMyList();
+      renderDiscoverGrid();
     } else if (state.section === "news") {
-      filterNews(state.newsFilter);
+      renderNews(state.news);
     } else if (state.section === "sports") {
-      loadSports(state.sportsTab).catch(() => toast("Sports refresh failed"));
+      renderSports(state.sportsVideos);
     }
+    renderSearchSuggestions([]);
     return;
   }
 
   if (state.section === "movies" || state.section === "mylist") {
-    const filtered = MOVIES.filter(
-      (movie) =>
-        movie.title.toLowerCase().includes(term) ||
-        movie.category.toLowerCase().includes(term) ||
-        movie.tags.join(" ").toLowerCase().includes(term)
+    renderMovieSearchResults(term);
+  } else if (state.section === "news") {
+    filterNewsByTerm(term);
+  } else if (state.section === "sports") {
+    const filtered = state.sportsVideos.filter((item) =>
+      (item.snippet?.title || "").toLowerCase().includes(term.toLowerCase())
     );
-    const html = filtered.length
-      ? filtered.map((movie) => movieCardTemplate(movie)).join("")
-      : `<p class="empty-text">No movie match found.</p>`;
-    [
-      el.moodGrid,
-      el.smartPicksGrid,
-      el.topPicksGrid,
-      el.continueGrid,
-      el.mcuGrid,
-      el.bollyGrid,
-      el.hollyGrid,
-      el.actionGrid,
-      el.mindGrid,
-      el.myListGrid
-    ].forEach((node) => {
-      node.innerHTML = html;
-    });
-    return;
+    renderSports(filtered);
   }
-
-  if (state.section === "news") {
-    const filtered = state.news.filter((article) => {
-      const text = `${article.title || ""} ${article.description || ""}`.toLowerCase();
-      return text.includes(term);
-    });
-    renderNews(filtered);
-    return;
-  }
-
-  if (state.section === "sports") {
-    fetchSports(term)
-      .then(() => renderSports())
-      .catch(() => toast("Sports search failed"));
-  }
+  renderSuggestionsForTerm(term);
 }
 
 function startHoverPreview(card) {
-  const title = card.dataset.movieTitle;
-  if (!title) {
+  const token = card.dataset.movieTitle;
+  if (!token) {
     return;
   }
+  const title = decodeTitle(token);
   clearTimeout(state.hoverTimers[title]);
   state.hoverTimers[title] = setTimeout(() => {
     const movie = movieByTitle(title);
-    const node = card.querySelector(`[data-preview-title="${title}"]`);
+    const node = card.querySelector(`[data-preview-title="${token}"]`);
     if (!movie || !node) {
       return;
     }
@@ -1069,9 +1630,10 @@ function startHoverPreview(card) {
 }
 
 function stopHoverPreview(card) {
-  const title = card.dataset.movieTitle;
+  const token = card.dataset.movieTitle;
+  const title = decodeTitle(token);
   clearTimeout(state.hoverTimers[title]);
-  const node = card.querySelector(`[data-preview-title="${title}"]`);
+  const node = card.querySelector(`[data-preview-title="${token}"]`);
   if (node) {
     node.classList.remove("show");
     node.innerHTML = "";
@@ -1090,8 +1652,8 @@ function renderProfileMenu() {
   }
   el.profileMenu.innerHTML = `
     <div class="profile-head">
-      <strong>${user.name}</strong>
-      <small>${user.email}</small>
+      <strong>${escapeHtml(user.name)}</strong>
+      <small>${escapeHtml(user.email)}</small>
     </div>
     <button data-profile-action="profile">Profile</button>
     <button data-profile-action="logout">Logout</button>
@@ -1159,6 +1721,7 @@ function handleAuthSubmit(event) {
   renderMyList();
   renderSmartPicks();
   renderTopPicks();
+  updateHero(state.heroMovie);
   runPendingAction();
 }
 
@@ -1176,12 +1739,13 @@ async function loadNews() {
   const filter = state.newsFilter || "all";
   if (state.newsCache[filter]) {
     state.news = state.newsCache[filter];
-    filterNews(filter);
+    renderNews(state.news);
+    updateLandingStats();
     return;
   }
   await fetchNews(filter);
   state.newsCache[filter] = state.news;
-  filterNews(state.newsFilter);
+  renderNews(state.news);
 }
 
 async function loadSports(tab) {
@@ -1190,9 +1754,10 @@ async function loadSports(tab) {
   if (SPORTS_QUERIES[tab] && state.sportsCache[tab]) {
     state.sportsVideos = state.sportsCache[tab];
     renderSports();
+    updateLandingStats();
     return;
   }
-  await fetchSports(SPORTS_QUERIES[tab] || SPORTS_QUERIES.cricket);
+  await fetchSports(SPORTS_QUERIES[tab] || SPORTS_QUERIES.cricket, tab);
   if (SPORTS_QUERIES[tab]) {
     state.sportsCache[tab] = state.sportsVideos;
   }
@@ -1205,10 +1770,18 @@ function bindEvents() {
       const section = card.dataset.category;
       applySection(section);
       if (section === "news" && !state.news.length) {
-        loadNews().catch(() => toast("News fetch failed"));
+        loadNews().catch(() => {
+          updateStatusBadge(el.newsStatusBadge, "Error", "error");
+          updateStatusBadge(el.landingNewsBadge, "Error", "error");
+          toast("News fetch failed");
+        });
       }
       if (section === "sports" && !state.sportsVideos.length) {
-        loadSports("cricket").catch(() => toast("Sports fetch failed"));
+        loadSports("cricket").catch(() => {
+          updateStatusBadge(el.sportsStatusBadge, "Error", "error");
+          updateStatusBadge(el.landingSportsBadge, "Error", "error");
+          toast("Sports fetch failed");
+        });
       }
     });
   });
@@ -1222,10 +1795,32 @@ function bindEvents() {
       closeModal(event.target);
     }
 
+    const suggestionBtn = event.target.closest("[data-suggestion]");
+    if (suggestionBtn) {
+      const type = suggestionBtn.dataset.suggestion;
+      if (type === "movie") {
+        const title = decodeTitle(suggestionBtn.dataset.title);
+        openMovieModal(title).catch(() => toast("Movie unavailable"));
+      } else if (type === "news") {
+        const url = decodeURIComponent(suggestionBtn.dataset.url || "");
+        if (url) {
+          window.open(url, "_blank", "noopener,noreferrer");
+        }
+      } else if (type === "sports") {
+        const videoId = suggestionBtn.dataset.videoId;
+        if (videoId) {
+          el.videoFrame.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+          openModal(el.videoModal);
+        }
+      }
+      renderSearchSuggestions([]);
+      return;
+    }
+
     const actionBtn = event.target.closest("[data-action]");
     if (actionBtn) {
       const action = actionBtn.dataset.action;
-      const title = actionBtn.dataset.title;
+      const title = decodeTitle(actionBtn.dataset.title);
       const videoId = actionBtn.dataset.videoId;
       if (action === "play-movie") {
         if (
@@ -1252,7 +1847,7 @@ function bindEvents() {
 
     const rateBtn = event.target.closest("[data-rate]");
     if (rateBtn) {
-      rateMovie(rateBtn.dataset.title, Number(rateBtn.dataset.rate));
+      rateMovie(decodeTitle(rateBtn.dataset.title), Number(rateBtn.dataset.rate));
     }
 
     const profileAction = event.target.closest("[data-profile-action]");
@@ -1265,6 +1860,7 @@ function bindEvents() {
         setCurrentUser(null);
         renderProfileMenu();
         renderMyList();
+        updateHero(state.heroMovie);
         toast("Logged out");
       } else {
         toast("Profile settings coming soon");
@@ -1274,6 +1870,10 @@ function bindEvents() {
 
     if (!event.target.closest(".profile-wrap")) {
       el.profileMenu.classList.remove("open");
+    }
+
+    if (!event.target.closest(".search-wrap")) {
+      renderSearchSuggestions([]);
     }
   });
 
@@ -1317,7 +1917,24 @@ function bindEvents() {
   });
 
   el.globalSearch.addEventListener("input", (event) => {
-    runSearch(event.target.value);
+    const term = event.target.value || "";
+    runSearch(term);
+    clearTimeout(state.searchDebounceTimer);
+    state.searchDebounceTimer = setTimeout(() => {
+      if (term.trim().length >= 2 && (state.section === "movies" || state.section === "mylist" || state.section === "home")) {
+        searchMoviesRemote(term);
+      } else if (term.trim().length >= 3 && state.section === "sports") {
+        fetchSports(term, `sports.search.${term}`)
+          .then(() => renderSports())
+          .catch(() => toast("Sports search failed"));
+      } else {
+        renderSuggestionsForTerm(term);
+      }
+    }, 320);
+  });
+
+  el.globalSearch.addEventListener("focus", () => {
+    renderSuggestionsForTerm(el.globalSearch.value || "");
   });
 
   el.heroTrailerBtn.addEventListener("click", () => {
@@ -1337,6 +1954,12 @@ function bindEvents() {
 
   el.quickPlayBtn.addEventListener("click", quickPlay);
 
+  if (el.loadMoreMoviesBtn) {
+    el.loadMoreMoviesBtn.addEventListener("click", () => {
+      loadMoreDiscoverMovies();
+    });
+  }
+
   el.moodButtons.forEach((button) => {
     button.addEventListener("click", () => {
       el.moodButtons.forEach((node) => node.classList.remove("active"));
@@ -1350,22 +1973,50 @@ function bindEvents() {
       el.newsFilterButtons.forEach((node) => node.classList.remove("active"));
       button.classList.add("active");
       state.newsFilter = button.dataset.newsFilter;
-      loadNews().catch(() => toast("News fetch failed"));
+      state.newsDisplayCount = 18;
+      loadNews().catch(() => {
+        updateStatusBadge(el.newsStatusBadge, "Error", "error");
+        updateStatusBadge(el.landingNewsBadge, "Error", "error");
+        toast("News fetch failed");
+      });
     });
   });
 
   el.refreshNewsBtn.addEventListener("click", () => {
     delete state.newsCache[state.newsFilter];
-    loadNews().catch(() => toast("News refresh failed"));
+    loadNews().catch(() => {
+      updateStatusBadge(el.newsStatusBadge, "Error", "error");
+      updateStatusBadge(el.landingNewsBadge, "Error", "error");
+      toast("News refresh failed");
+    });
   });
+
+  if (el.loadMoreNewsBtn) {
+    el.loadMoreNewsBtn.addEventListener("click", () => {
+      state.newsDisplayCount += 12;
+      renderNews(state.news);
+    });
+  }
 
   el.sportsFilterButtons.forEach((button) => {
     button.addEventListener("click", () => {
       el.sportsFilterButtons.forEach((node) => node.classList.remove("active"));
       button.classList.add("active");
-      loadSports(button.dataset.sportsFilter).catch(() => toast("Sports load failed"));
+      state.sportsDisplayCount = 24;
+      loadSports(button.dataset.sportsFilter).catch(() => {
+        updateStatusBadge(el.sportsStatusBadge, "Error", "error");
+        updateStatusBadge(el.landingSportsBadge, "Error", "error");
+        toast("Sports load failed");
+      });
     });
   });
+
+  if (el.loadMoreSportsBtn) {
+    el.loadMoreSportsBtn.addEventListener("click", () => {
+      state.sportsDisplayCount += 12;
+      renderSports();
+    });
+  }
 
   el.authForm.addEventListener("submit", handleAuthSubmit);
   el.authSwitchBtn.addEventListener("click", () => {
@@ -1382,6 +2033,7 @@ function bindEvents() {
       closeModal(el.videoModal);
       closeModal(el.authModal);
       el.profileMenu.classList.remove("open");
+      renderSearchSuggestions([]);
     }
   });
 
@@ -1414,16 +2066,35 @@ function initMovies() {
     renderTopPicks();
     renderContinueWatching();
     renderMyList();
+    renderDiscoverGrid();
     revealOnScroll();
-  }, 350);
+  }, 250);
 }
 
-function init() {
+async function bootLiveFeeds() {
+  try {
+    await loadNews();
+  } catch (_error) {
+    updateStatusBadge(el.newsStatusBadge, "Error", "error");
+    updateStatusBadge(el.landingNewsBadge, "Error", "error");
+  }
+  try {
+    await loadSports("cricket");
+  } catch (_error) {
+    updateStatusBadge(el.sportsStatusBadge, "Error", "error");
+    updateStatusBadge(el.landingSportsBadge, "Error", "error");
+  }
+}
+
+async function init() {
   renderProfileMenu();
   switchAuthMode("login");
   initMovies();
   bindEvents();
   applySection("home");
+  updateLandingStats();
+  await Promise.allSettled([hydrateMovieAssets(), loadMoreDiscoverMovies(), bootLiveFeeds()]);
+  revealOnScroll();
 }
 
 init();

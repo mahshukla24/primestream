@@ -23,6 +23,7 @@
       <div class="nav-actions">
         <div class="search-wrap">
           <input id="globalSearch" type="search" placeholder="Search..." />
+            <div id="searchSuggestions" class="search-suggestions hidden"></div>
         </div>
         <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">🌙</button>
         <div class="profile-wrap">
@@ -40,18 +41,32 @@
           <div class="landing-content">
             <h1>Prime <span>Stream</span></h1>
             <p>Movies, world news, and sports highlights in one premium platform.</p>
+            <div class="landing-stats">
+              <article>
+                <strong id="landingMovieCount">0+</strong>
+                <span>Movie picks</span>
+              </article>
+              <article>
+                <strong id="landingNewsCount">0+</strong>
+                <span>Global headlines</span>
+              </article>
+              <article>
+                <strong id="landingSportsCount">0+</strong>
+                <span>Sports highlights</span>
+              </article>
+            </div>
           </div>
           <div class="category-grid">
             <article class="category-card" data-category="movies">
-              <h2>🎬 Movies</h2>
+              <h2>🎬 Movies <span class="status-badge neutral">Curated + Discover</span></h2>
               <p>Curated blockbuster picks with OTT-style interactions.</p>
             </article>
             <article class="category-card" data-category="news">
-              <h2>🌍 World News</h2>
+              <h2>🌍 World News <span id="landingNewsBadge" class="status-badge neutral">Loading</span></h2>
               <p>Real-time top headlines powered by GNews API.</p>
             </article>
             <article class="category-card" data-category="sports">
-              <h2>⚽ Sports Highlights</h2>
+              <h2>⚽ Sports Highlights <span id="landingSportsBadge" class="status-badge neutral">Loading</span></h2>
               <p>Top moments from YouTube for cricket, football, chess, and badminton.</p>
             </article>
           </div>
@@ -134,12 +149,25 @@
           <h3>Mind-blowing Movies</h3>
           <div id="mindGrid" class="card-grid"></div>
         </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <h3>Discover: Never Ending Movies</h3>
+            <button id="loadMoreMoviesBtn" class="ghost-btn">Load More</button>
+          </div>
+          <div id="discoverGrid" class="card-grid"></div>
+        </section>
       </section>
 
       <section id="myListView" class="section-view hidden">
         <section class="panel">
           <h3>My List</h3>
+          <p id="myListStats" class="empty-text"></p>
           <div id="myListGrid" class="card-grid"></div>
+        </section>
+        <section class="panel">
+          <h3>Recently Viewed</h3>
+          <div id="myRecentGrid" class="card-grid"></div>
         </section>
       </section>
 
@@ -157,7 +185,10 @@
           </div>
         </section>
         <section class="panel">
-          <h3>World News</h3>
+          <div class="section-head">
+            <h3>World News</h3>
+            <button id="loadMoreNewsBtn" class="ghost-btn">Load More</button>
+          </div>
           <div id="newsGrid" class="news-grid"></div>
         </section>
       </section>
@@ -173,7 +204,10 @@
           <span id="sportsStatusBadge" class="status-badge neutral">Loading</span>
         </section>
         <section class="panel">
-          <h3>Top Moments</h3>
+          <div class="section-head">
+            <h3>Top Moments</h3>
+            <button id="loadMoreSportsBtn" class="ghost-btn">Load More</button>
+          </div>
           <div id="sportsTopGrid" class="sports-grid"></div>
         </section>
         <section class="panel">
