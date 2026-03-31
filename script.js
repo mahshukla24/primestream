@@ -1,5 +1,5 @@
 const NEWS_API_KEY = "89e2055d344e11518febbae8a42b5b44";
-const NEWS_URL = `https://gnews.io/api/v4/top-headlines?lang=en&country=in&max=12&apikey=${NEWS_API_KEY}`;
+const NEWS_URL = `https://gnews.io/api/v4/top-headlines?lang=en&topic=world&max=12&apikey=${NEWS_API_KEY}`;
 
 const YOUTUBE_API_KEY = "AIzaSyA0glsPFgjtnx2dJCCxn-xeRvKSHweDaXA";
 const YOUTUBE_BASE = "https://www.googleapis.com/youtube/v3/search";
@@ -7,6 +7,10 @@ const CORS_PROXIES = [
   "https://api.allorigins.win/raw?url=",
   "https://corsproxy.io/?"
 ];
+const ALLORIGINS_GET = "https://api.allorigins.win/get?url=";
+const API_CACHE_PREFIX = "primeStream.apiCache.";
+const API_CACHE_TTL_MS = 1000 * 60 * 30;
+const FETCH_TIMEOUT_MS = 12000;
 
 const MOVIES = [
   {

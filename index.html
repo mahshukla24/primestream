@@ -151,7 +151,10 @@
             <button class="chip" data-news-filter="business">Business</button>
             <button class="chip" data-news-filter="science">Science</button>
           </div>
-          <button id="refreshNewsBtn" class="ghost-btn">Refresh</button>
+          <div class="status-actions">
+            <span id="newsStatusBadge" class="status-badge neutral">Loading</span>
+            <button id="refreshNewsBtn" class="ghost-btn">Refresh</button>
+          </div>
         </section>
         <section class="panel">
           <h3>World News</h3>
@@ -167,6 +170,7 @@
             <button class="chip" data-sports-filter="chess">Chess</button>
             <button class="chip" data-sports-filter="badminton">Badminton</button>
           </div>
+          <span id="sportsStatusBadge" class="status-badge neutral">Loading</span>
         </section>
         <section class="panel">
           <h3>Top Moments</h3>
