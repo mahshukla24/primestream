@@ -41,10 +41,10 @@ $insert->execute([
 ]);
 
 $userId = (int) $pdo->lastInsertId();
-set_logged_in_user_id($userId);
-$user = auth_user();
+$user = login_user($userId);
 
 json_response([
+    'success' => true,
     'message' => 'Registration successful',
     'user' => $user,
 ], 201);

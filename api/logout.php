@@ -7,8 +7,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_response(['ok' => false, 'message' => 'Method not allowed'], 405);
 }
 
-session_unset();
-session_destroy();
+logout_user();
+setcookie('prime_mood', '', time() - 3600, '/');
 
 json_response([
     'ok' => true,

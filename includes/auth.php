@@ -38,6 +38,16 @@ function login_user(int $userId): array
     return require_login();
 }
 
+function set_logged_in_user_id(int $userId): array
+{
+    return login_user($userId);
+}
+
+function require_auth(?PDO $unused = null): array
+{
+    return require_login();
+}
+
 function logout_user(): void
 {
     $_SESSION = [];

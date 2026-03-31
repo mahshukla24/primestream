@@ -160,11 +160,11 @@ textarea {
   object-fit: cover;
 }
 
-.card-body {
+.title-body {
   padding: 12px;
 }
 
-.card-body h3 {
+.title-body h3 {
   margin: 0 0 6px;
   font-size: 1.03rem;
 }
@@ -184,17 +184,29 @@ textarea {
   font-size: 0.93rem;
 }
 
-.score-row {
+.scores {
   display: flex;
   justify-content: space-between;
   font-size: 0.82rem;
   color: #c9d2f0;
   margin-bottom: 9px;
+  gap: 8px;
+}
+
+.prime-score {
+  color: #9ee8ff;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .auth-card h2,
 .stats-card h2,
-.review-block h3 {
+.data-card h2 {
   margin-top: 0;
 }
 
@@ -213,16 +225,20 @@ textarea {
   display: grid;
 }
 
-.review-block {
-  margin-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  padding-top: 12px;
+.hidden {
+  display: none;
 }
 
-.review-list {
+.review-box {
+  margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 10px;
+}
+
+.reviews-list {
   display: grid;
   gap: 8px;
-  max-height: 260px;
+  max-height: 220px;
   overflow: auto;
   margin-bottom: 10px;
 }
@@ -234,14 +250,8 @@ textarea {
   padding: 8px;
 }
 
-.review-item .top {
-  display: flex;
-  justify-content: space-between;
-}
-
-.tiny {
-  color: #cad3f1;
-  font-size: 0.8rem;
+.review-item p {
+  margin: 6px 0 0;
 }
 
 .stats-list {
@@ -255,6 +265,31 @@ textarea {
   border-radius: 9px;
   padding: 8px 10px;
   background: rgba(255, 255, 255, 0.05);
+}
+
+.data-view-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.data-view-grid h3 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  color: #d5ddff;
+}
+
+.data-view-grid pre {
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  max-height: 180px;
+  overflow: auto;
+  font-size: 0.77rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  white-space: pre-wrap;
 }
 
 .btn-primary,
@@ -289,6 +324,7 @@ textarea {
 }
 
 .toast {
+  display: none;
   position: fixed;
   right: 18px;
   bottom: 18px;
@@ -298,18 +334,9 @@ textarea {
   padding: 11px 13px;
   background: rgba(9, 13, 30, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  transform: translateY(18px);
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.2s ease;
 }
 
-.toast.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.toast.success {
+.toast.ok {
   border-color: rgba(92, 212, 160, 0.7);
 }
 

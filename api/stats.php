@@ -31,6 +31,7 @@ $auditBytes = file_exists($auditLog) ? (int) filesize($auditLog) : 0;
 
 json_response([
     'success' => true,
+    'user' => auth_user(),
     'stats' => [
         'users' => $users,
         'titles' => $titles,

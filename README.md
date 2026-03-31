@@ -19,7 +19,7 @@ It is designed as an "Amazon Prime + Netflix style" project with extra features 
   - Trending export JSON (`storage/exports/`)
   - Review audit log (`storage/review_audit.log`)
 
-## 1) Setup in XAMPP
+## 1) Setup in XAMPP (localhost)
 
 1. Copy this project folder into:
 
@@ -31,7 +31,8 @@ It is designed as an "Amazon Prime + Netflix style" project with extra features 
 3. Open phpMyAdmin and run `database.sql` (import or SQL tab).
 
 4. Visit:
-   - `http://localhost/primestream/`
+   - Main site: `http://localhost/primestream/`
+   - Setup check page: `http://localhost/primestream/setup-check.php`
 
 ## 2) Default Database Credentials
 
@@ -56,6 +57,7 @@ Change them there if your XAMPP setup is different.
 - Avatar upload endpoint (PHP file upload handling)
 - Export trending titles to JSON file
 - Stats panel showing records in DB and storage info
+- Live storage viewer panel to show real DB rows and stored files
 
 ## 4) Important Directories
 
@@ -70,3 +72,17 @@ Change them there if your XAMPP setup is different.
 
 - This project is a learning/demo implementation for college-level full-stack concepts.
 - Use HTTPS and stronger production-grade hardening before any real deployment.
+
+## 6) How to show "data is stored" in your viva/demo
+
+1. Open `http://localhost/primestream/setup-check.php` and show all checks PASS.
+2. Register a user in the app.
+3. Submit a review on any title.
+4. Upload avatar image.
+5. Click **Export Trending JSON**.
+6. Open the **Live Data Storage** panel in the right column and click **Refresh Data Storage View**.
+   - It shows:
+     - rows from `users`, `titles`, `reviews` tables
+     - uploaded files in `storage/uploads`
+     - exported JSON files in `storage/exports`
+     - latest lines from `storage/review_audit.log`

@@ -2,24 +2,61 @@
 
 const state = {
   mood: (window.PRIME_STREAM_BOOT && window.PRIME_STREAM_BOOT.mood) || "chill",
-  selectedTitleId: null,
-  titles: [],
 };
 
-function toast(message, variant = "ok") {
+function toast(message, variant = "success") {
   const $toast = $("#toast");
-  $toast.removeClass("error ok").addClass(variant).text(message).fadeIn(160);
-  window.clearTimeout(window.__primeToastTimer);
-  window.__primeToastTimer = window.setTimeout(() => $toast.fadeOut(240), 2500);
+  $toast
+    .removeClass("success error")
+    .addClass(variant)
+    .text(message)
+    .addClass("show");
+
+  window.clearTimeout(window.__psToastTimer);
+  window.__psToastTimer = window.setTimeout(() => {
+    $toast.removeClass("show");
+  }, 2500);
 }
 
 function esc(text) {
-  return String(text || "")
+  return String(text == null ? "" : text)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function formatJson(value) {
+  return JSON.stringify(value, null, 2);
+}
+
+function renderSessionPanel(user) {
+  const $panel = $("#sessionPanel");
+  if (user) {
+    const avatar = user.avatar_path
+      ? `<img src="${esc(user.avatar_path)}" alt="avatar">`
+      : "";
+
+    $panel.html(`
+      <div class="user-pill">
+        <span>Welcome, ${esc(user.name)}</span>
+        ${avatar}
+      </div>
+      <button id="logoutBtn" class="btn-secondary">Logout</button>
+    `);
+
+    $("#authTabs").addClass("hidden");
+    $("#loginTab").removeClass("active");
+    $("#registerTab").removeClass("active");
+    $("#avatarUploadForm").removeClass("hidden");
+  } else {
+    $panel.html(`<p class="hint">Login to rate, review and export data.</p>`);
+    $("#authTabs").removeClass("hidden");
+    $("#loginTab").addClass("active");
+    $("#registerTab").removeClass("active");
+    $("#avatarUploadForm").addClass("hidden");
+  }
 }
 
 function renderStats(stats) {
@@ -28,13 +65,17 @@ function renderStats(stats) {
     ["Titles", stats.titles],
     ["Reviews", stats.reviews],
     ["Uploaded Avatars", stats.uploaded_avatars],
-    ["Exports", stats.exports],
+    ["Exports", stats.exports_count],
     ["Audit Log (bytes)", stats.audit_log_bytes],
   ];
 
   const html = rows
-    .map(([k, v]) => `<div class="stat-row"><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`)
+    .map(
+      ([key, value]) =>
+        `<div class="stat-item"><span>${esc(key)}</span><strong>${esc(value)}</strong></div>`
+    )
     .join("");
+
   $("#statsPanel .stats-list").html(html);
 }
 
@@ -56,18 +97,19 @@ function loadReviews(titleId, $target) {
         return;
       }
 
-      const reviewHtml = res.reviews
+      const html = res.reviews
         .map(
-          (r) => `
+          (review) => `
             <div class="review-item">
-              <div><strong>${esc(r.name)}</strong> • ⭐ ${esc(r.rating)}</div>
-              <small>${esc(r.created_at)}</small>
-              <p>${esc(r.review_text)}</p>
+              <div><strong>${esc(review.reviewer_name)}</strong> • ⭐ ${esc(review.rating)}</div>
+              <small>${esc(review.created_at)}</small>
+              <p>${esc(review.review_text)}</p>
             </div>
           `
         )
         .join("");
-      $target.html(reviewHtml);
+
+      $target.html(html);
     })
     .fail(() => {
       $target.html('<p class="hint">Could not load reviews.</p>');
@@ -76,6 +118,7 @@ function loadReviews(titleId, $target) {
 
 function renderCatalog(items) {
   const $catalog = $("#catalog");
+
   if (!Array.isArray(items) || items.length === 0) {
     $catalog.html('<div class="glass empty">No titles found for this mood/search.</div>');
     return;
@@ -84,34 +127,34 @@ function renderCatalog(items) {
   const cards = items
     .map(
       (item) => `
-      <article class="title-card glass" data-id="${item.id}">
-        <img src="${esc(item.thumbnail_url)}" alt="${esc(item.title)} poster">
-        <div class="title-body">
-          <h3>${esc(item.title)}</h3>
-          <p class="meta">${esc(item.genre)} • ${esc(item.release_year)} • ${esc(item.duration_min)} min</p>
-          <p class="desc">${esc(item.description)}</p>
-          <div class="scores">
-            <span>IMDb: ${esc(item.imdb_rating)}</span>
-            <span>Community: ${esc(item.community_rating)}</span>
-            <span class="prime-score">Prime Score: ${esc(item.prime_score)}</span>
+        <article class="title-card glass" data-id="${item.id}">
+          <img src="${esc(item.thumbnail_url)}" alt="${esc(item.title)} poster">
+          <div class="title-body">
+            <h3>${esc(item.title)}</h3>
+            <p class="meta">${esc(item.genre)} • ${esc(item.release_year)} • ${esc(item.duration_min)} min</p>
+            <p class="desc">${esc(item.description)}</p>
+            <div class="scores">
+              <span>IMDb: ${esc(item.imdb_rating)}</span>
+              <span>Community: ${esc(item.community_rating)}</span>
+              <span class="prime-score">Prime Score: ${esc(item.prime_score)}</span>
+            </div>
+            <div class="actions">
+              <button class="btn-secondary watch-btn" data-url="${esc(item.trailer_url)}">Watch Trailer</button>
+              <button class="btn-primary review-toggle-btn">Reviews</button>
+            </div>
+            <section class="review-box" hidden>
+              <div class="reviews-list"></div>
+              <form class="review-form">
+                <label>Rating (1-10)</label>
+                <input type="number" step="0.1" min="1" max="10" name="rating" required>
+                <label>Your review</label>
+                <textarea name="review_text" rows="2" required></textarea>
+                <button type="submit" class="btn-primary">Submit Review</button>
+              </form>
+            </section>
           </div>
-          <div class="actions">
-            <button class="btn-secondary watch-btn" data-url="${esc(item.trailer_url)}">Watch Trailer</button>
-            <button class="btn-primary review-toggle-btn">Reviews</button>
-          </div>
-          <section class="review-box" hidden>
-            <div class="reviews-list"></div>
-            <form class="review-form">
-              <label>Rating (1-10)</label>
-              <input type="number" step="0.1" min="1" max="10" name="rating" required>
-              <label>Your review</label>
-              <textarea name="review_text" rows="2" required></textarea>
-              <button type="submit" class="btn-primary">Submit Review</button>
-            </form>
-          </section>
-        </div>
-      </article>
-    `
+        </article>
+      `
     )
     .join("");
 
@@ -121,8 +164,7 @@ function renderCatalog(items) {
 function fetchTitles() {
   $.getJSON("api/titles.php", { mood: state.mood, q: $("#searchInput").val() })
     .done((res) => {
-      state.titles = res.items || [];
-      renderCatalog(state.titles);
+      renderCatalog(res.items || []);
     })
     .fail((xhr) => {
       toast((xhr.responseJSON && xhr.responseJSON.error) || "Could not load titles", "error");
@@ -135,8 +177,38 @@ function fetchStats() {
       if (res && res.stats) {
         renderStats(res.stats);
       }
+      if (res && res.user) {
+        renderSessionPanel(res.user);
+      } else {
+        renderSessionPanel(null);
+      }
     })
-    .fail(() => toast("Could not load stats", "error"));
+    .fail(() => {
+      toast("Could not load stats", "error");
+      renderSessionPanel(null);
+    });
+}
+
+function fetchStorageView() {
+  $.getJSON("api/storage-view.php")
+    .done((res) => {
+      $("#usersDump").text(formatJson((res.database && res.database.users) || []));
+      $("#reviewsDump").text(formatJson((res.database && res.database.reviews) || []));
+      $("#exportsDump").text(
+        formatJson({
+          exports: (res.files && res.files.exports) || [],
+          uploads: (res.files && res.files.uploads) || [],
+        })
+      );
+      $("#auditDump").text(
+        (res.files && res.files.review_audit_log_preview) || "No log entries yet."
+      );
+    })
+    .fail(() => {
+      $("#usersDump, #reviewsDump, #exportsDump, #auditDump").text(
+        "Could not load live storage data."
+      );
+    });
 }
 
 function switchAuthTab(tabId) {
@@ -149,40 +221,43 @@ function switchAuthTab(tabId) {
 $(function init() {
   fetchTitles();
   fetchStats();
+  fetchStorageView();
 
-  $(".mood-btn").on("click", function onMood() {
-    const mood = $(this).data("mood");
-    state.mood = mood;
+  $(".mood-btn").on("click", function onMoodClick() {
+    state.mood = $(this).data("mood");
     $(".mood-btn").removeClass("active");
     $(this).addClass("active");
     fetchTitles();
   });
 
-  $("#searchInput").on("input", function onSearch() {
-    if ($(this).val().length === 0 || $(this).val().length >= 2) {
+  $("#searchInput").on("input", function onSearchInput() {
+    const value = $(this).val();
+    if (value.length === 0 || value.length >= 2) {
       fetchTitles();
     }
   });
 
   $("#refreshStats").on("click", fetchStats);
+  $("#refreshStorageView").on("click", fetchStorageView);
 
-  $("#exportTrending").on("click", function onExport() {
+  $("#exportTrending").on("click", function onExportTrending() {
     $.post("api/export-trending.php")
       .done((res) => {
-        toast("Trending export created: " + res.file, "ok");
+        toast("Trending export created: " + (res.file_url || ""), "success");
         fetchStats();
+        fetchStorageView();
       })
       .fail((xhr) => {
         toast((xhr.responseJSON && xhr.responseJSON.error) || "Export failed", "error");
       });
   });
 
-  $(".tab-btn").on("click", function onTab() {
+  $(".tab-btn").on("click", function onTabClick() {
     switchAuthTab($(this).data("tab"));
   });
 
-  $("#registerTab").on("submit", function onRegister(ev) {
-    ev.preventDefault();
+  $("#registerTab").on("submit", function onRegisterSubmit(event) {
+    event.preventDefault();
     const payload = {
       name: $(this).find('[name="name"]').val(),
       email: $(this).find('[name="email"]').val(),
@@ -196,16 +271,16 @@ $(function init() {
       data: JSON.stringify(payload),
     })
       .done((res) => {
-        toast(res.message || "Registration complete", "ok");
-        setTimeout(() => window.location.reload(), 600);
+        toast(res.message || "Registration complete", "success");
+        setTimeout(() => window.location.reload(), 500);
       })
       .fail((xhr) => {
         toast((xhr.responseJSON && xhr.responseJSON.error) || "Registration failed", "error");
       });
   });
 
-  $("#loginTab").on("submit", function onLogin(ev) {
-    ev.preventDefault();
+  $("#loginTab").on("submit", function onLoginSubmit(event) {
+    event.preventDefault();
     const payload = {
       identity: $(this).find('[name="email"]').val(),
       password: $(this).find('[name="password"]').val(),
@@ -218,21 +293,22 @@ $(function init() {
       data: JSON.stringify(payload),
     })
       .done((res) => {
-        toast(res.message || "Logged in", "ok");
-        setTimeout(() => window.location.reload(), 450);
+        toast(res.message || "Logged in", "success");
+        setTimeout(() => window.location.reload(), 350);
       })
       .fail((xhr) => {
         toast((xhr.responseJSON && xhr.responseJSON.error) || "Login failed", "error");
       });
   });
 
-  $("#logoutBtn").on("click", function onLogout() {
-    $.post("api/logout.php").done(() => window.location.reload());
+  $(document).on("click", "#logoutBtn", function onLogoutClick() {
+    $.post("api/logout.php").always(() => window.location.reload());
   });
 
-  $("#avatarUploadForm").on("submit", function onAvatarUpload(ev) {
-    ev.preventDefault();
+  $("#avatarUploadForm").on("submit", function onAvatarUpload(event) {
+    event.preventDefault();
     const formData = new FormData(this);
+
     $.ajax({
       url: "api/profile-upload.php",
       method: "POST",
@@ -241,8 +317,8 @@ $(function init() {
       contentType: false,
     })
       .done((res) => {
-        toast(res.message || "Avatar uploaded", "ok");
-        setTimeout(() => window.location.reload(), 450);
+        toast(res.message || "Avatar uploaded", "success");
+        setTimeout(() => window.location.reload(), 350);
       })
       .fail((xhr) => {
         toast((xhr.responseJSON && xhr.responseJSON.error) || "Upload failed", "error");
@@ -250,20 +326,21 @@ $(function init() {
   });
 
   $("#catalog")
-    .on("click", ".watch-btn", function onWatch() {
+    .on("click", ".watch-btn", function onWatchClick() {
       openTrailer($(this).data("url"));
     })
     .on("click", ".review-toggle-btn", function onReviewToggle() {
       const $card = $(this).closest(".title-card");
       const titleId = Number($card.data("id"));
       const $box = $card.find(".review-box");
-      $box.prop("hidden", !$box.prop("hidden"));
-      if (!$box.prop("hidden")) {
+      const isHidden = $box.prop("hidden");
+      $box.prop("hidden", !isHidden);
+      if (isHidden) {
         loadReviews(titleId, $card.find(".reviews-list"));
       }
     })
-    .on("submit", ".review-form", function onReviewSubmit(ev) {
-      ev.preventDefault();
+    .on("submit", ".review-form", function onReviewSubmit(event) {
+      event.preventDefault();
       const $form = $(this);
       const $card = $form.closest(".title-card");
       const titleId = Number($card.data("id"));
@@ -280,10 +357,11 @@ $(function init() {
         data: JSON.stringify(payload),
       })
         .done((res) => {
-          toast(res.message || "Review saved", "ok");
+          toast(res.message || "Review saved", "success");
           loadReviews(titleId, $card.find(".reviews-list"));
           fetchTitles();
           fetchStats();
+          fetchStorageView();
           $form.trigger("reset");
         })
         .fail((xhr) => {
@@ -291,8 +369,8 @@ $(function init() {
         });
     });
 
-  $("#closeTrailer, #trailerModal").on("click", function onCloseTrailer(ev) {
-    if (ev.target.id === "trailerModal" || ev.target.id === "closeTrailer") {
+  $("#closeTrailer, #trailerModal").on("click", function onModalClose(event) {
+    if (event.target.id === "trailerModal" || event.target.id === "closeTrailer") {
       closeTrailer();
     }
   });

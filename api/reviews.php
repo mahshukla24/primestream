@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_response(['ok' => false, 'message' => 'Method not allowed.'], 405);
 }
 
-$user = require_auth($pdo);
+$user = require_login();
 $payload = read_json_input();
 $titleId = (int) ($payload['title_id'] ?? 0);
 $rating = round((float) ($payload['rating'] ?? 0), 1);
