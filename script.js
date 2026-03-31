@@ -16,6 +16,19 @@ const FETCH_TIMEOUT_MS = 12000;
 const MOVIE_PLACEHOLDER = "https://via.placeholder.com/600x900/141b2f/ffffff?text=Prime+Stream";
 const NEWS_PLACEHOLDER = "https://via.placeholder.com/900x520/11192d/ffffff?text=World+News";
 const SPORTS_PLACEHOLDER = "https://via.placeholder.com/900x520/11192d/ffffff?text=Sports+Highlights";
+const ADULT_KEYWORDS_RE =
+  /\b(nude|nudity|porn|xxx|sex|erotic|hot scene|18\+|adult movie|uncut)\b/i;
+const NON_ALLOWED_LANG_KEYWORDS_RE =
+  /\b(tamil|telugu|malayalam|kannada|marathi|bengali|punjabi|gujarati|spanish|espanol|portuguese|bahasa|indonesian|turkish|thai|korean|japanese|russian)\b/i;
+const NON_ALLOWED_SCRIPT_RE =
+  /[\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F\u0980-\u09FF\u0600-\u06FF\u3040-\u30FF\u4E00-\u9FFF]/;
+const HINDI_SCRIPT_RE = /[\u0900-\u097F]/;
+const ENGLISH_TRAILER_SIGNAL_RE = /\b(official|trailer|movie|film|teaser|english|hindi|hd)\b/i;
+const HINDI_TRAILER_SIGNAL_RE = /ट्रेलर|हिंदी|हिन्दी/i;
+const SPORTS_KEYWORD_RE =
+  /\b(highlight|highlights|cricket|football|soccer|chess|badminton|goal|wicket|inning|checkmate|tournament|cup|league|final|semi|match)\b/i;
+const BLOCKED_SPORTS_LATIN_RE =
+  /\b(resumen|partido|golazo|bahasa|naik|dunia|pertandingan|liga indonesia|turkiye)\b/i;
 
 const MOVIES = [
   {
@@ -247,6 +260,41 @@ const SPORTS_QUERIES = {
   badminton: "badminton highlights world tour english commentary"
 };
 
+const SPORTS_QUERY_POOL = {
+  cricket: [
+    "cricket highlights english commentary t20 ipl international match",
+    "cricket test match highlights english commentary",
+    "odi match highlights english commentary",
+    "icc champions trophy highlights english"
+  ],
+  football: [
+    "football highlights english commentary ucl premier league",
+    "uefa champions league highlights english",
+    "premier league match highlights english",
+    "fifa world cup qualifiers highlights english"
+  ],
+  chess: [
+    "chess championship highlights english commentary",
+    "fide candidates highlights english",
+    "world chess championship game recap english",
+    "chess tactical highlights english"
+  ],
+  badminton: [
+    "badminton highlights world tour english commentary",
+    "bwf super series highlights english",
+    "badminton finals highlights english commentary",
+    "all england badminton highlights english"
+  ]
+};
+
+const DISCOVER_ENDPOINTS = [
+  `${TMDB_BASE}/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=`,
+  `${TMDB_BASE}/movie/top_rated?api_key=${TMDB_API_KEY}&language=en-US&page=`,
+  `${TMDB_BASE}/trending/movie/week?api_key=${TMDB_API_KEY}&page=`,
+  `${TMDB_BASE}/movie/now_playing?api_key=${TMDB_API_KEY}&language=en-US&page=`,
+  `${TMDB_BASE}/movie/upcoming?api_key=${TMDB_API_KEY}&language=en-US&page=`
+];
+
 const STORAGE = {
   users: "primeStream.users",
   user: "primeStream.user",
@@ -273,9 +321,17 @@ const state = {
   movieAssetCache: getJSON(STORAGE.movieAssets, {}),
   hoverTimers: {},
   heroMovie: MOVIES.find((movie) => movie.title.includes("Spider-Man")) || MOVIES[0],
-  newsDisplayCount: 18,
-  sportsDisplayCount: 24,
+  newsDisplayCount: 24,
+  sportsDisplayCount: 36,
   discoverPage: 1,
+  newsFetchSeed: 0,
+  movieQueryIndex: 0,
+  sportsQueryIndex: {
+    cricket: 0,
+    football: 0,
+    chess: 0,
+    badminton: 0
+  },
   lastScrollY: 0,
   currentSearchTerm: "",
   searchDebounceTimer: null
@@ -650,6 +706,29 @@ function updateLandingStats() {
   }
 }
 
+function cycleNewsUrls(filter) {
+  const urls = newsUrlsByFilter(filter);
+  if (!urls.length) {
+    return [];
+  }
+  const seed = state.newsFetchSeed % urls.length;
+  state.newsFetchSeed = (state.newsFetchSeed + 1) % urls.length;
+  return [...urls.slice(seed), ...urls.slice(0, seed)];
+}
+
+function cycleMovieSourceUrl() {
+  const endpoint = DISCOVER_ENDPOINTS[state.movieQueryIndex % DISCOVER_ENDPOINTS.length];
+  state.movieQueryIndex = (state.movieQueryIndex + 1) % DISCOVER_ENDPOINTS.length;
+  return `${endpoint}${state.discoverPage}`;
+}
+
+function cycleSportsQuery(tab) {
+  const pool = SPORTS_QUERY_POOL[tab] || [SPORTS_QUERIES[tab] || SPORTS_QUERIES.cricket];
+  const index = state.sportsQueryIndex[tab] || 0;
+  state.sportsQueryIndex[tab] = (index + 1) % pool.length;
+  return [...pool.slice(index), ...pool.slice(0, index)];
+}
+
 function trailerFromVideoId(videoId) {
   return `https://www.youtube.com/embed/${videoId}`;
 }
@@ -674,12 +753,33 @@ function registerDynamicMovies(movies) {
   });
 }
 
+function isSafeMovieResult(item) {
+  if (!item) {
+    return false;
+  }
+  if (item.adult) {
+    return false;
+  }
+  const text = `${item.title || item.name || ""} ${item.overview || ""}`.toLowerCase();
+  if (ADULT_KEYWORDS_RE.test(text)) {
+    return false;
+  }
+  if (!item.poster_path && !item.backdrop_path) {
+    return false;
+  }
+  return true;
+}
+
 function tmdbToMovie(item) {
+  if (!isSafeMovieResult(item)) {
+    return null;
+  }
   const title = item.title || item.name || "Untitled Movie";
   const poster = item.poster_path ? `${TMDB_IMAGE_BASE}${item.poster_path}` : MOVIE_PLACEHOLDER;
   const backdrop = item.backdrop_path ? `${TMDB_IMAGE_BASE}${item.backdrop_path}` : poster;
+  const language = String(item.original_language || "").toLowerCase();
   const category =
-    item.original_language === "hi"
+    language === "hi"
       ? "Bollywood"
       : item.title?.includes("Avengers") || item.title?.includes("Spider-Man")
       ? "Marvel"
@@ -707,20 +807,49 @@ function candidateTrailerScore(item) {
   let score = 0;
   if (text.includes("official")) score += 40;
   if (text.includes("trailer")) score += 35;
+  if (text.includes("english trailer") || text.includes("hindi trailer")) score += 25;
   if (text.includes("final trailer")) score += 15;
+  if (text.includes("4k") || text.includes("hd")) score += 10;
   if (text.includes("teaser")) score -= 35;
   if (text.includes("promo") || text.includes("clip")) score -= 25;
   if (text.includes("fan made") || text.includes("reaction")) score -= 60;
+  if (NON_ALLOWED_LANG_KEYWORDS_RE.test(text)) score -= 90;
+  if (NON_ALLOWED_SCRIPT_RE.test(text) && !HINDI_SCRIPT_RE.test(text)) score -= 100;
   if (text.includes("sony pictures") || text.includes("marvel") || text.includes("warner bros")) score += 20;
   if ((item.snippet?.title || "").split(" ").length < 2) score -= 10;
   return score;
+}
+
+function isAllowedTrailerCandidate(item) {
+  if (!item?.id?.videoId) {
+    return false;
+  }
+  const text = `${item.snippet?.title || ""} ${item.snippet?.description || ""} ${
+    item.snippet?.channelTitle || ""
+  }`;
+  if (ADULT_KEYWORDS_RE.test(text)) {
+    return false;
+  }
+  const lower = text.toLowerCase();
+  if (NON_ALLOWED_SCRIPT_RE.test(text) && !HINDI_SCRIPT_RE.test(text)) {
+    return false;
+  }
+  if (NON_ALLOWED_LANG_KEYWORDS_RE.test(lower) && !lower.includes("hindi")) {
+    return false;
+  }
+  return ENGLISH_TRAILER_SIGNAL_RE.test(text) || HINDI_TRAILER_SIGNAL_RE.test(text);
 }
 
 async function resolveMovieTrailer(movie) {
   if (state.trailerCache[movie.title]) {
     return state.trailerCache[movie.title];
   }
-  const queries = [`${movie.title} official trailer`, `${movie.title} trailer`];
+  const queries = [
+    `${movie.title} official trailer english`,
+    `${movie.title} official trailer hindi`,
+    `${movie.title} official trailer hd`,
+    `${movie.title} trailer english`
+  ];
   for (const query of queries) {
     const url = `${YOUTUBE_BASE}?part=snippet&type=video&videoEmbeddable=true&safeSearch=strict&relevanceLanguage=en&maxResults=12&q=${encodeURIComponent(
       query
@@ -728,7 +857,7 @@ async function resolveMovieTrailer(movie) {
     try {
       const data = await fetchJSONWithFallback(url, { cacheKey: `yt.trailer.${query}` });
       const items = (data.items || [])
-        .filter((item) => item.id?.videoId)
+        .filter((item) => isAllowedTrailerCandidate(item))
         .sort((a, b) => candidateTrailerScore(b) - candidateTrailerScore(a));
       const selected = items[0];
       if (selected?.id?.videoId) {
@@ -1197,29 +1326,35 @@ function quickPlay() {
 }
 
 function newsUrlsByFilter(filter) {
-  const base = `https://gnews.io/api/v4/top-headlines?lang=en&max=25&apikey=${NEWS_API_KEY}`;
+  const base = `https://gnews.io/api/v4/top-headlines?lang=en&max=40&apikey=${NEWS_API_KEY}`;
   if (filter === "tech") {
     return [
       `${base}&topic=technology`,
       `${base}&topic=technology&country=us`,
-      `${base}&topic=technology&country=gb`
+      `${base}&topic=technology&country=gb`,
+      `${base}&topic=technology&country=ca`,
+      `${base}&topic=technology&country=au`
     ];
   }
   if (filter === "business") {
     return [
       `${base}&topic=business`,
       `${base}&topic=business&country=us`,
-      `${base}&topic=business&country=gb`
+      `${base}&topic=business&country=gb`,
+      `${base}&topic=business&country=ca`,
+      `${base}&topic=business&country=au`
     ];
   }
   if (filter === "science") {
     return [
       `${base}&topic=science`,
       `${base}&topic=science&country=us`,
-      `${base}&topic=science&country=gb`
+      `${base}&topic=science&country=gb`,
+      `${base}&topic=science&country=ca`,
+      `${base}&topic=science&country=au`
     ];
   }
-  return [NEWS_URL, `${base}&country=us`, `${base}&country=gb`];
+  return [NEWS_URL, `${base}&country=us`, `${base}&country=gb`, `${base}&country=ca`, `${base}&country=au`];
 }
 
 function isLikelyEnglish(text) {
@@ -1242,11 +1377,13 @@ function toNewsCardShape(article) {
   };
 }
 
-async function fetchNews(filter = "all") {
+async function fetchNews(filter = "all", options = {}) {
+  const append = Boolean(options.append);
+  const keepDisplay = Boolean(options.keepDisplay);
   updateStatusBadge(el.newsStatusBadge, "Loading", "neutral");
   updateStatusBadge(el.landingNewsBadge, "Loading", "neutral");
 
-  const urls = newsUrlsByFilter(filter);
+  const urls = cycleNewsUrls(filter);
   const collected = [];
 
   for (const url of urls) {
@@ -1257,7 +1394,7 @@ async function fetchNews(filter = "all") {
         .filter((article) => isLikelyEnglish(`${article.title} ${article.description || ""}`))
         .map(toNewsCardShape);
       collected.push(...filtered);
-      if (collected.length >= 40) {
+      if (collected.length >= 120) {
         break;
       }
     } catch (_error) {
@@ -1265,7 +1402,8 @@ async function fetchNews(filter = "all") {
     }
   }
 
-  const uniqueNews = uniqueBy(collected, (article) => `${article.title}-${article.url}`).slice(0, 60);
+  const merged = append ? [...state.news, ...collected] : collected;
+  const uniqueNews = uniqueBy(merged, (article) => `${article.title}-${article.url}`).slice(0, 320);
   if (!uniqueNews.length) {
     updateStatusBadge(el.newsStatusBadge, "No Feed", "error");
     updateStatusBadge(el.landingNewsBadge, "No Feed", "error");
@@ -1274,7 +1412,9 @@ async function fetchNews(filter = "all") {
   }
 
   state.news = uniqueNews;
-  state.newsDisplayCount = 18;
+  if (!keepDisplay) {
+    state.newsDisplayCount = 24;
+  }
   updateStatusBadge(el.newsStatusBadge, "Live Global Feed", "success");
   updateStatusBadge(el.landingNewsBadge, "Live", "success");
   updateLandingStats();
@@ -1330,7 +1470,7 @@ function renderNewsSkeletons() {
 }
 
 const NON_ENGLISH_VIDEO_RE =
-  /hindi|हिंदी|हिन्दी|தமிழ்|తెలుగు|ಕನ್ನಡ|മലയാളം|বাংলা|اردو|full hindi|हाइलाइट्स|हाइलाइट|हिन्दी कमेंट्री/i;
+  /தமிழ்|తెలుగు|ಕನ್ನಡ|മലയാളം|বাংলা|اردو|हाइलाइट्स|हाइलाइट/i;
 const SPORTS_SPAM_RE = /prediction|dream11|fantasy|live stream|match live now|betting/i;
 
 function isEnglishSportsItem(item) {
@@ -1343,24 +1483,64 @@ function isEnglishSportsItem(item) {
   if (NON_ENGLISH_VIDEO_RE.test(text) || SPORTS_SPAM_RE.test(text.toLowerCase())) {
     return false;
   }
+  if (BLOCKED_SPORTS_LATIN_RE.test(text.toLowerCase())) {
+    return false;
+  }
+  if (!SPORTS_KEYWORD_RE.test(text.toLowerCase())) {
+    return false;
+  }
   return isLikelyEnglish(text);
 }
 
-async function fetchSports(query, cacheKey = query) {
+function isStrictSportsItem(item) {
+  if (!isEnglishSportsItem(item)) {
+    return false;
+  }
+  const text = `${item.snippet?.title || ""} ${item.snippet?.description || ""} ${item.snippet?.channelTitle || ""}`;
+  const lower = text.toLowerCase();
+  if (NON_ALLOWED_LANG_KEYWORDS_RE.test(lower)) {
+    return false;
+  }
+  if (NON_ALLOWED_SCRIPT_RE.test(text) && !HINDI_SCRIPT_RE.test(text)) {
+    return false;
+  }
+  return true;
+}
+
+async function fetchSports(query, cacheKey = query, options = {}) {
+  const append = Boolean(options.append);
+  const resetDisplay = options.resetDisplay !== false;
+  const extraQueries = options.extraQueries || [];
   updateStatusBadge(el.sportsStatusBadge, "Loading", "neutral");
   updateStatusBadge(el.landingSportsBadge, "Loading", "neutral");
 
-  const url = `${YOUTUBE_BASE}?part=snippet&type=video&videoEmbeddable=true&safeSearch=strict&relevanceLanguage=en&maxResults=36&order=date&q=${encodeURIComponent(
-    query
-  )}&key=${YOUTUBE_API_KEY}`;
+  const queries = uniqueBy([query, ...extraQueries], (item) => item);
+  const collected = [];
+  for (const q of queries) {
+    try {
+      const url = `${YOUTUBE_BASE}?part=snippet&type=video&videoEmbeddable=true&safeSearch=strict&relevanceLanguage=en&maxResults=50&order=date&q=${encodeURIComponent(
+        q
+      )}&key=${YOUTUBE_API_KEY}`;
+      const data = await fetchJSONWithFallback(url, { cacheKey: `sports.${cacheKey}.${q}` });
+      const filtered = (data.items || []).filter(isStrictSportsItem);
+      collected.push(...filtered);
+      if (collected.length >= 160) {
+        break;
+      }
+    } catch (_error) {
+      // try next query from pool
+    }
+  }
 
-  const data = await fetchJSONWithFallback(url, { cacheKey: `sports.${cacheKey}` });
-  const filtered = (data.items || []).filter(isEnglishSportsItem);
-  state.sportsVideos = filtered;
-  state.sportsDisplayCount = 24;
+  const merged = append ? [...state.sportsVideos, ...collected] : collected;
+  state.sportsVideos = uniqueBy(merged, (item) => item.id?.videoId).slice(0, 420);
+  if (resetDisplay) {
+    state.sportsDisplayCount = 36;
+  }
 
-  updateStatusBadge(el.sportsStatusBadge, filtered.length ? "Live Highlights (EN)" : "No Feed", filtered.length ? "success" : "warn");
-  updateStatusBadge(el.landingSportsBadge, filtered.length ? "Live" : "No Feed", filtered.length ? "success" : "warn");
+  const hasFeed = state.sportsVideos.length > 0;
+  updateStatusBadge(el.sportsStatusBadge, hasFeed ? "Live Highlights (EN)" : "No Feed", hasFeed ? "success" : "warn");
+  updateStatusBadge(el.landingSportsBadge, hasFeed ? "Live" : "No Feed", hasFeed ? "success" : "warn");
   updateLandingStats();
 }
 
@@ -1409,18 +1589,15 @@ async function loadMoreDiscoverMovies() {
   if (!el.discoverGrid) {
     return;
   }
-  const page = state.discoverPage;
-  const sourceUrl =
-    page % 2 === 1
-      ? `${TMDB_BASE}/movie/popular?api_key=${TMDB_API_KEY}&page=${Math.ceil(page / 2)}`
-      : `${TMDB_BASE}/trending/movie/week?api_key=${TMDB_API_KEY}&page=${Math.ceil(page / 2)}`;
+  const sourceUrl = cycleMovieSourceUrl();
 
   try {
-    const data = await fetchJSONWithFallback(sourceUrl, { cacheKey: `discover.page.${page}` });
+    const data = await fetchJSONWithFallback(sourceUrl, { cacheKey: `discover.page.${sourceUrl}` });
     const mapped = (data.results || [])
-      .filter((movie) => movie.poster_path)
+      .filter((movie) => isSafeMovieResult(movie))
       .map(tmdbToMovie)
-      .slice(0, 24);
+      .filter(Boolean)
+      .slice(0, 120);
     registerDynamicMovies(mapped);
     state.discoverMovies = uniqueBy([...state.discoverMovies, ...mapped], (movie) =>
       normText(movie.title)
@@ -1447,9 +1624,10 @@ async function searchMoviesRemote(term) {
   try {
     const data = await fetchJSONWithFallback(url, { cacheKey: `tmdb.search.live.${trimmed}` });
     const remoteMovies = (data.results || [])
-      .filter((movie) => movie.poster_path)
+      .filter((movie) => isSafeMovieResult(movie))
       .map(tmdbToMovie)
-      .slice(0, 24);
+      .filter(Boolean)
+      .slice(0, 80);
     registerDynamicMovies(remoteMovies);
     state.movieSearchResults = remoteMovies;
     if ((state.section === "movies" || state.section === "mylist") && state.currentSearchTerm.trim()) {
@@ -1471,7 +1649,7 @@ function renderMovieSearchResults(term) {
       const hay = `${movie.title} ${movie.category} ${(movie.tags || []).join(" ")} ${(movie.description || "").slice(0, 120)}`.toLowerCase();
       return hay.includes(query);
     })
-    .slice(0, 48);
+    .slice(0, 120);
 
   if (state.section === "mylist") {
     const wl = new Set(getWatchlist());
@@ -1743,7 +1921,7 @@ async function loadNews() {
     updateLandingStats();
     return;
   }
-  await fetchNews(filter);
+  await fetchNews(filter, { append: false, keepDisplay: false });
   state.newsCache[filter] = state.news;
   renderNews(state.news);
 }
@@ -1757,7 +1935,12 @@ async function loadSports(tab) {
     updateLandingStats();
     return;
   }
-  await fetchSports(SPORTS_QUERIES[tab] || SPORTS_QUERIES.cricket, tab);
+  const queries = cycleSportsQuery(tab);
+  await fetchSports(queries[0] || SPORTS_QUERIES[tab] || SPORTS_QUERIES.cricket, tab, {
+    append: false,
+    resetDisplay: true,
+    extraQueries: queries.slice(1)
+  });
   if (SPORTS_QUERIES[tab]) {
     state.sportsCache[tab] = state.sportsVideos;
   }
@@ -1924,7 +2107,11 @@ function bindEvents() {
       if (term.trim().length >= 2 && (state.section === "movies" || state.section === "mylist" || state.section === "home")) {
         searchMoviesRemote(term);
       } else if (term.trim().length >= 3 && state.section === "sports") {
-        fetchSports(term, `sports.search.${term}`)
+        fetchSports(term, `sports.search.${term}`, {
+          append: false,
+          resetDisplay: true,
+          extraQueries: [`${term} english commentary`, `${term} highlights`]
+        })
           .then(() => renderSports())
           .catch(() => toast("Sports search failed"));
       } else {
@@ -1973,7 +2160,8 @@ function bindEvents() {
       el.newsFilterButtons.forEach((node) => node.classList.remove("active"));
       button.classList.add("active");
       state.newsFilter = button.dataset.newsFilter;
-      state.newsDisplayCount = 18;
+      state.newsDisplayCount = 24;
+      state.newsFetchSeed += 1;
       loadNews().catch(() => {
         updateStatusBadge(el.newsStatusBadge, "Error", "error");
         updateStatusBadge(el.landingNewsBadge, "Error", "error");
@@ -1993,8 +2181,15 @@ function bindEvents() {
 
   if (el.loadMoreNewsBtn) {
     el.loadMoreNewsBtn.addEventListener("click", () => {
-      state.newsDisplayCount += 12;
-      renderNews(state.news);
+      state.newsDisplayCount += 24;
+      const needMore = state.news.length - state.newsDisplayCount < 20;
+      if (!needMore) {
+        renderNews(state.news);
+        return;
+      }
+      fetchNews(state.newsFilter, { append: true, keepDisplay: true })
+        .then(() => renderNews(state.news))
+        .catch(() => renderNews(state.news));
     });
   }
 
@@ -2002,7 +2197,7 @@ function bindEvents() {
     button.addEventListener("click", () => {
       el.sportsFilterButtons.forEach((node) => node.classList.remove("active"));
       button.classList.add("active");
-      state.sportsDisplayCount = 24;
+      state.sportsDisplayCount = 36;
       loadSports(button.dataset.sportsFilter).catch(() => {
         updateStatusBadge(el.sportsStatusBadge, "Error", "error");
         updateStatusBadge(el.landingSportsBadge, "Error", "error");
@@ -2013,8 +2208,21 @@ function bindEvents() {
 
   if (el.loadMoreSportsBtn) {
     el.loadMoreSportsBtn.addEventListener("click", () => {
-      state.sportsDisplayCount += 12;
-      renderSports();
+      state.sportsDisplayCount += 24;
+      const needMore = state.sportsVideos.length - state.sportsDisplayCount < 24;
+      if (!needMore) {
+        renderSports();
+        return;
+      }
+      const tab = state.sportsTab || "cricket";
+      const queries = cycleSportsQuery(tab);
+      fetchSports(queries[0] || SPORTS_QUERIES[tab] || SPORTS_QUERIES.cricket, `${tab}.more.${Date.now()}`, {
+        append: true,
+        resetDisplay: false,
+        extraQueries: queries.slice(1)
+      })
+        .then(() => renderSports())
+        .catch(() => renderSports());
     });
   }
 
