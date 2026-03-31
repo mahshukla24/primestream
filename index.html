@@ -13,127 +13,130 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body data-theme="dark">
-    <header class="navbar glass">
+    <header id="navbar" class="navbar">
       <div class="logo">Prime <span>Stream</span></div>
-      <nav class="nav-links" id="navLinks">
-        <a href="#home" data-i18n="home">Home</a>
-        <a href="#moviesSection" data-i18n="movies">Movies</a>
-        <a href="#tvSection" data-i18n="tvShows">TV Shows</a>
-        <a href="#myListSection" data-i18n="myList">My List</a>
+
+      <nav id="navTabs" class="nav-tabs">
+        <button class="nav-tab active" data-view="home">Home</button>
+        <button class="nav-tab" data-view="movies">Movies</button>
+        <button class="nav-tab" data-view="tv">TV Shows</button>
+        <button class="nav-tab" data-view="trending">Trending</button>
+        <button class="nav-tab" data-view="mylist">My List</button>
       </nav>
+
       <div class="nav-actions">
         <div class="search-wrap">
-          <input
-            id="searchInput"
-            type="search"
-            autocomplete="off"
-            placeholder="Search movies..."
-            data-i18n-placeholder="searchPlaceholder"
-          />
-          <div id="searchResults" class="search-results"></div>
+          <input id="searchInput" type="search" placeholder="Search movies..." autocomplete="off" />
+          <div id="searchSuggestions" class="search-suggestions"></div>
         </div>
-        <select id="languageToggle" class="lang-select" aria-label="Language toggle">
+        <select id="languageToggle" class="compact-select" aria-label="Language">
           <option value="en">EN</option>
-          <option value="es">ES</option>
           <option value="hi">HI</option>
+          <option value="es">ES</option>
         </select>
-        <button id="themeToggle" class="icon-btn" aria-label="Toggle dark mode">🌙</button>
+        <button id="themeToggle" class="icon-btn" aria-label="Theme toggle">🌙</button>
         <div class="profile-wrap">
-          <button id="profileButton" class="icon-btn" aria-label="Profile menu">👤</button>
-          <div id="profileDropdown" class="profile-dropdown glass"></div>
+          <button id="profileBtn" class="icon-btn" aria-label="Profile">👤</button>
+          <div id="profileMenu" class="profile-menu"></div>
         </div>
-        <button id="hamburgerButton" class="icon-btn hamburger" aria-label="Mobile menu">
-          ☰
-        </button>
+        <button id="mobileNavBtn" class="icon-btn mobile-nav-btn" aria-label="Open menu">☰</button>
       </div>
     </header>
 
-    <main id="home">
-      <section class="hero">
-        <video
-          class="hero-video"
-          autoplay
-          muted
-          loop
-          playsinline
-          poster="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1600&q=80"
-        >
-          <source
-            src="https://cdn.coverr.co/videos/coverr-watching-a-movie-at-home-1579/1080p.mp4"
-            type="video/mp4"
-          />
-        </video>
-        <div class="hero-overlay"></div>
-        <div class="hero-content">
-          <span class="badge" data-i18n="top10">Top 10 Today</span>
-          <h1 id="heroTitle">Featured Movie</h1>
-          <p id="heroMeta">Genre • 4.8 ★</p>
-          <p id="heroDescription">
-            A thrilling journey across worlds, where secrets and survival collide.
-          </p>
-          <div class="hero-buttons">
-            <button id="heroTrailerBtn" class="primary-btn" data-i18n="watchTrailer">▶ Watch Trailer</button>
-            <button id="heroWatchlistBtn" class="ghost-btn" data-i18n="addWatchlist">
-              ✚ Add to Watchlist
-            </button>
+    <main id="app">
+      <section id="view-home" class="view active">
+        <section id="heroSection" class="hero">
+          <div id="heroBackdrop" class="hero-backdrop"></div>
+          <div class="hero-overlay"></div>
+          <div class="hero-content">
+            <span class="top-badge">Top 10 Today</span>
+            <h1 id="heroTitle">Loading...</h1>
+            <p id="heroMeta">Rating • Genres</p>
+            <p id="heroOverview">Fetching trending movie details...</p>
+            <div class="hero-actions">
+              <button id="heroTrailerBtn" class="primary-btn">▶ Watch Trailer</button>
+              <button id="heroWatchlistBtn" class="ghost-btn">✚ Add to Watchlist</button>
+            </div>
+          </div>
+          <div id="heroTrailerWrap" class="hero-trailer-wrap"></div>
+        </section>
+
+        <section class="row-wrapper">
+          <div id="homeRows" class="rows-container"></div>
+        </section>
+      </section>
+
+      <section id="view-movies" class="view">
+        <div class="movies-toolbar">
+          <div id="genreChips" class="genre-chips"></div>
+          <div class="sort-block">
+            <label for="sortBy">Sort:</label>
+            <select id="sortBy" class="compact-select">
+              <option value="popularity">Popularity</option>
+              <option value="rating">Rating</option>
+            </select>
           </div>
         </div>
+        <div id="moviesGrid" class="movie-grid"></div>
       </section>
 
-      <section id="moviesSection" class="discovery-panel glass">
-        <div class="chips" id="genreChips"></div>
-        <div class="sort-wrap">
-          <label for="sortSelect" data-i18n="sortBy">Sort by</label>
-          <select id="sortSelect">
-            <option value="popularity" data-i18n="popularity">Popularity</option>
-            <option value="rating" data-i18n="rating">Rating</option>
-          </select>
+      <section id="view-tv" class="view">
+        <div class="panel">
+          <h2>TV Shows</h2>
+          <p>
+            TV integration layer is ready for expansion. This section currently mirrors high quality
+            TMDb movie curation while keeping SPA transitions and premium interactions.
+          </p>
+          <div id="tvRows" class="rows-container"></div>
         </div>
       </section>
 
-      <section id="recommendSection" class="recommend-banner"></section>
-
-      <section id="rowsContainer" class="rows-container"></section>
-
-      <section id="tvSection" class="tv-placeholder glass">
-        <h2 data-i18n="tvShows">TV Shows</h2>
-        <p data-i18n="tvPlaceholder">
-          Curated TV content is coming soon. Meanwhile, explore movie collections.
-        </p>
+      <section id="view-trending" class="view">
+        <div class="panel">
+          <h2>Trending This Week</h2>
+          <div id="trendingGrid" class="movie-grid"></div>
+        </div>
       </section>
 
-      <section id="myListSection" class="my-list-section">
-        <div class="section-header">
-          <h2 data-i18n="myList">My List</h2>
+      <section id="view-mylist" class="view">
+        <div class="panel">
+          <h2>My List</h2>
+          <div id="watchlistGrid" class="movie-grid"></div>
         </div>
-        <div id="myListGrid" class="watchlist-grid"></div>
       </section>
     </main>
 
-    <button id="scrollTopButton" class="scroll-top" aria-label="Scroll to top">↑</button>
+    <button id="scrollTopBtn" class="scroll-top-btn" aria-label="Scroll to top">↑</button>
 
     <footer class="footer">
       <div class="footer-links">
-        <a href="#" data-i18n="about">About</a>
-        <a href="#" data-i18n="contact">Contact</a>
-        <a href="#" data-i18n="privacy">Privacy Policy</a>
+        <a href="#">About</a>
+        <a href="#">Contact</a>
+        <a href="#">Privacy Policy</a>
       </div>
-      <div class="socials" aria-label="social links">
-        <a href="#" aria-label="x">𝕏</a>
-        <a href="#" aria-label="instagram">◎</a>
-        <a href="#" aria-label="youtube">▶</a>
+      <div class="social-links">
+        <a href="#" aria-label="X">𝕏</a>
+        <a href="#" aria-label="Instagram">◎</a>
+        <a href="#" aria-label="YouTube">▶</a>
       </div>
-      <p>© <span id="yearNow"></span> Prime Stream</p>
+      <p>© <span id="yearText"></span> Prime Stream</p>
     </footer>
 
-    <div id="toastContainer" class="toast-container"></div>
+    <div id="toastStack" class="toast-stack"></div>
+
+    <div id="movieModal" class="modal">
+      <div class="modal-card movie-modal-card">
+        <button class="close-btn" data-close-modal="movieModal">✕</button>
+        <div id="movieModalBody"></div>
+      </div>
+    </div>
 
     <div id="trailerModal" class="modal">
-      <div class="modal-content trailer-modal-content">
-        <button class="close-btn" data-close="trailerModal">✕</button>
+      <div class="modal-card trailer-modal-card">
+        <button class="close-btn" data-close-modal="trailerModal">✕</button>
         <iframe
           id="trailerFrame"
-          title="Movie trailer"
+          title="Trailer player"
           src=""
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen
@@ -141,40 +144,29 @@
       </div>
     </div>
 
-    <div id="detailsModal" class="modal">
-      <div class="modal-content details-modal-content">
-        <button class="close-btn" data-close="detailsModal">✕</button>
-        <div id="detailsBody"></div>
-      </div>
-    </div>
-
     <div id="authModal" class="modal">
-      <div class="modal-content auth-modal-content">
-        <button class="close-btn" data-close="authModal">✕</button>
-        <div class="auth-tabs">
-          <button class="auth-tab active" data-mode="login" data-i18n="login">Login</button>
-          <button class="auth-tab" data-mode="signup" data-i18n="signup">Signup</button>
-        </div>
-        <form id="authForm">
-          <div id="nameField" class="form-field hidden">
-            <label for="authName" data-i18n="fullName">Full Name</label>
+      <div class="modal-card auth-modal-card">
+        <button class="close-btn" data-close-modal="authModal">✕</button>
+        <h3 id="authTitle">Login</h3>
+        <form id="authForm" novalidate>
+          <div id="nameFieldWrap" class="field hidden">
+            <label for="authName">Full Name</label>
             <input id="authName" type="text" />
           </div>
-          <div class="form-field">
+          <div class="field">
             <label for="authEmail">Email</label>
             <input id="authEmail" type="email" required />
           </div>
-          <div class="form-field">
-            <label for="authPassword" data-i18n="password">Password</label>
+          <div class="field">
+            <label for="authPassword">Password</label>
             <input id="authPassword" type="password" minlength="6" required />
           </div>
-          <div id="confirmPasswordField" class="form-field hidden">
-            <label for="authConfirmPassword" data-i18n="confirmPassword">Confirm Password</label>
-            <input id="authConfirmPassword" type="password" />
+          <div id="confirmFieldWrap" class="field hidden">
+            <label for="authConfirm">Confirm Password</label>
+            <input id="authConfirm" type="password" />
           </div>
-          <button id="authSubmitBtn" type="submit" class="primary-btn" data-i18n="login">
-            Login
-          </button>
+          <button id="authSubmitBtn" type="submit" class="primary-btn">Login</button>
+          <button id="authSwitchBtn" type="button" class="link-btn">Create account</button>
         </form>
       </div>
     </div>
