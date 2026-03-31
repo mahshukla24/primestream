@@ -474,10 +474,14 @@ function movieByTitle(title) {
 function applySection(section) {
   state.section = section;
   const allViews = [el.landingView, el.moviesView, el.newsView, el.sportsView, el.myListView];
-  allViews.forEach((node) => node.classList.add("hidden"));
+  allViews.forEach((node) => {
+    node.classList.add("hidden");
+    node.classList.remove("active");
+  });
 
   if (section === "home") {
     el.landingView.classList.remove("hidden");
+    el.landingView.classList.add("active");
     el.navbar.classList.add("hidden");
     return;
   }
@@ -495,12 +499,16 @@ function applySection(section) {
 
   if (section === "movies") {
     el.moviesView.classList.remove("hidden");
+    el.moviesView.classList.add("active");
   } else if (section === "news") {
     el.newsView.classList.remove("hidden");
+    el.newsView.classList.add("active");
   } else if (section === "sports") {
     el.sportsView.classList.remove("hidden");
+    el.sportsView.classList.add("active");
   } else if (section === "mylist") {
     el.myListView.classList.remove("hidden");
+    el.myListView.classList.add("active");
   }
 }
 
