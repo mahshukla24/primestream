@@ -1,15 +1,10 @@
-const curatedMovies = [
-  {
-    title: "Spider-Man: Homecoming",
-    poster: "https://image.tmdb.org/t/p/original/c24sv2weTHPsmDa7jEMN0m2P3RT.jpg",
-    trailer: "https://www.youtube.com/embed/rk-dF1lIbIg",
-    rating: 7.4,
-    category: "Marvel",
-    moods: ["Action", "Mind-blowing"],
-    tags: ["Action & Hype", "Mind-blowing Movies"],
-    description:
-      "Peter Parker balances high school life with becoming a local hero under Tony Stark's mentorship."
-  },
+const NEWS_API_KEY = "89e2055d344e11518febbae8a42b5b44";
+const NEWS_URL = `https://gnews.io/api/v4/top-headlines?lang=en&country=in&max=12&apikey=${NEWS_API_KEY}`;
+
+const YOUTUBE_API_KEY = "AIzaSyA0glsPFgjtnx2dJCCxn-xeRvKSHweDaXA";
+const YOUTUBE_BASE = "https://www.googleapis.com/youtube/v3/search";
+
+const MOVIES = [
   {
     title: "Spider-Man: Far From Home",
     poster: "https://image.tmdb.org/t/p/original/4q2NNj4S5dG2RLF9CpXsej7yXl.jpg",
@@ -17,64 +12,28 @@ const curatedMovies = [
     rating: 7.4,
     category: "Marvel",
     moods: ["Action", "Mind-blowing"],
-    tags: ["Action & Hype", "Mind-blowing Movies"],
-    description:
-      "Peter's Europe trip turns into a mission when mysterious element attacks threaten cities."
+    tags: ["Action", "Top10"],
+    description: "Peter Parker faces global threats while balancing hero duties with teenage life."
   },
   {
-    title: "Ant-Man",
-    poster: "https://image.tmdb.org/t/p/original/rS97hUJ1otKTTripGwQ0ujbuIri.jpg",
-    trailer: "https://www.youtube.com/embed/pWdKf3MneyI",
-    rating: 7.3,
-    category: "Marvel",
-    moods: ["Action"],
-    tags: ["MCU Universe", "Action & Hype"],
-    description:
-      "A skilled thief becomes a tiny but powerful superhero in a high-stakes heist mission."
-  },
-  {
-    title: "Ant-Man and the Wasp",
-    poster: "https://image.tmdb.org/t/p/original/eivQmS3wqzqnQWILHLc4FsEfcXP.jpg",
-    trailer: "https://www.youtube.com/embed/UUkn-enk2RU",
-    rating: 7.0,
-    category: "Marvel",
-    moods: ["Action"],
-    tags: ["MCU Universe", "Action & Hype"],
-    description:
-      "Scott teams with Hope van Dyne to uncover secrets from the quantum realm and rescue Janet."
-  },
-  {
-    title: "Shang-Chi and the Legend of the Ten Rings",
-    poster: "https://image.tmdb.org/t/p/original/1BIoJGKbXjdFDAqUEiA2VHqkK1Z.jpg",
-    trailer: "https://www.youtube.com/embed/8YjFbMbfXaQ",
+    title: "Spider-Man: Homecoming",
+    poster: "https://image.tmdb.org/t/p/original/c24sv2weTHPsmDa7jEMN0m2P3RT.jpg",
+    trailer: "https://www.youtube.com/embed/rk-dF1lIbIg",
     rating: 7.4,
     category: "Marvel",
-    moods: ["Action", "Mind-blowing"],
-    tags: ["MCU Universe", "Action & Hype"],
-    description:
-      "A young warrior confronts his past and the power of the legendary Ten Rings."
+    moods: ["Action", "Fun"],
+    tags: ["Action", "Top10"],
+    description: "A young Peter Parker trains under Tony Stark while proving himself as Spider-Man."
   },
   {
-    title: "The Avengers",
-    poster: "https://image.tmdb.org/t/p/original/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
-    trailer: "https://www.youtube.com/embed/eOrNdBpGMv8",
-    rating: 8.0,
+    title: "Avengers: Endgame",
+    poster: "https://image.tmdb.org/t/p/original/or06FN3Dka5tukK1e9sl16pB3iy.jpg",
+    trailer: "https://www.youtube.com/embed/TcMBFSGVi1c",
+    rating: 8.4,
     category: "Marvel",
     moods: ["Action", "Mind-blowing"],
-    tags: ["MCU Universe", "Action & Hype"],
-    description:
-      "Earth's mightiest heroes unite to stop Loki and an alien invasion in New York."
-  },
-  {
-    title: "Avengers: Age of Ultron",
-    poster: "https://image.tmdb.org/t/p/original/4ssDuvEDkSArWEdyBl2X5EHvYKU.jpg",
-    trailer: "https://www.youtube.com/embed/tmeOjFno6Do",
-    rating: 7.3,
-    category: "Marvel",
-    moods: ["Action", "Mind-blowing"],
-    tags: ["MCU Universe", "Action & Hype"],
-    description:
-      "The Avengers face Ultron, an artificial intelligence bent on humanity's extinction."
+    tags: ["Action", "Top10"],
+    description: "The Avengers assemble one last time to restore what was lost."
   },
   {
     title: "Avengers: Infinity War",
@@ -83,20 +42,8 @@ const curatedMovies = [
     rating: 8.4,
     category: "Marvel",
     moods: ["Action", "Mind-blowing"],
-    tags: ["MCU Universe", "Top 10 Ranking", "Action & Hype"],
-    description:
-      "The Avengers and allies fight to stop Thanos from collecting all Infinity Stones."
-  },
-  {
-    title: "Avengers: Endgame",
-    poster: "https://image.tmdb.org/t/p/original/or06FN3Dka5tukK1e9sl16pB3iy.jpg",
-    trailer: "https://www.youtube.com/embed/TcMBFSGVi1c",
-    rating: 8.4,
-    category: "Marvel",
-    moods: ["Action", "Emotional", "Mind-blowing"],
-    tags: ["MCU Universe", "Top 10 Ranking", "Action & Hype"],
-    description:
-      "After devastating loss, the Avengers make one final attempt to restore the universe."
+    tags: ["Action", "Top10"],
+    description: "Heroes unite across the universe against Thanos and his Infinity Stone mission."
   },
   {
     title: "Iron Man",
@@ -104,10 +51,9 @@ const curatedMovies = [
     trailer: "https://www.youtube.com/embed/8hYlB38asDY",
     rating: 7.9,
     category: "Marvel",
-    moods: ["Action", "Mind-blowing"],
-    tags: ["MCU Universe", "Top 10 Ranking"],
-    description:
-      "Tony Stark builds a high-tech armored suit and launches the Marvel cinematic era."
+    moods: ["Action", "Fun"],
+    tags: ["Top10"],
+    description: "Tony Stark builds the first Iron Man suit and changes superhero history."
   },
   {
     title: "Doctor Strange",
@@ -115,43 +61,9 @@ const curatedMovies = [
     trailer: "https://www.youtube.com/embed/HSzx-zryEgM",
     rating: 7.5,
     category: "Marvel",
-    moods: ["Mind-blowing", "Action"],
-    tags: ["MCU Universe", "Mind-blowing Movies"],
-    description:
-      "A brilliant surgeon discovers mystic arts and protects Earth from dark dimensions."
-  },
-  {
-    title: "Doctor Strange in the Multiverse of Madness",
-    poster: "https://image.tmdb.org/t/p/original/9Gtg2DzBhmYamXBS1hKAhiwbBKS.jpg",
-    trailer: "https://www.youtube.com/embed/aWzlQ2N6qqg",
-    rating: 6.9,
-    category: "Marvel",
-    moods: ["Mind-blowing", "Action"],
-    tags: ["MCU Universe", "Mind-blowing Movies"],
-    description:
-      "Doctor Strange and allies traverse dangerous multiverses to confront a powerful threat."
-  },
-  {
-    title: "Guardians of the Galaxy",
-    poster: "https://image.tmdb.org/t/p/original/r7vmZjiyZw9rpJMQJdXpjgiCOk9.jpg",
-    trailer: "https://www.youtube.com/embed/d96cjJhvlMA",
-    rating: 8.0,
-    category: "Marvel",
-    moods: ["Action", "Emotional"],
-    tags: ["MCU Universe", "Top 10 Ranking"],
-    description:
-      "A ragtag space team bands together to save the galaxy from cosmic destruction."
-  },
-  {
-    title: "Guardians of the Galaxy Vol. 2",
-    poster: "https://image.tmdb.org/t/p/original/y4MBh0EjBlMuOzv9axM4qJlmhzz.jpg",
-    trailer: "https://www.youtube.com/embed/dW1BIid8Osg",
-    rating: 7.6,
-    category: "Marvel",
-    moods: ["Action", "Emotional"],
-    tags: ["MCU Universe", "Top 10 Ranking"],
-    description:
-      "The Guardians uncover hidden truths about Peter Quill's origins while facing new dangers."
+    moods: ["Mind-blowing"],
+    tags: ["Mind", "Top10"],
+    description: "A gifted surgeon discovers the mystic arts and multiverse-level threats."
   },
   {
     title: "Thor: Ragnarok",
@@ -159,32 +71,9 @@ const curatedMovies = [
     trailer: "https://www.youtube.com/embed/ue80QwXMRHg",
     rating: 7.9,
     category: "Marvel",
-    moods: ["Action", "Mind-blowing"],
-    tags: ["MCU Universe", "Action & Hype"],
-    description:
-      "Thor must escape Sakaar and stop Hela before Asgard is destroyed."
-  },
-  {
-    title: "Thor: Love and Thunder",
-    poster: "https://image.tmdb.org/t/p/original/pIkRyD18kl4FhoCNQuWxWu5cBLM.jpg",
-    trailer: "https://www.youtube.com/embed/Go8nTmfrQd8",
-    rating: 6.2,
-    category: "Marvel",
-    moods: ["Action"],
-    tags: ["MCU Universe", "Action & Hype"],
-    description:
-      "Thor reunites with old allies and faces a cosmic killer while discovering a new purpose."
-  },
-  {
-    title: "Captain America: Civil War",
-    poster: "https://image.tmdb.org/t/p/original/rAGiXaUfPzY7CDEyNKUofk3Kw2e.jpg",
-    trailer: "https://www.youtube.com/embed/dKrVegVI0Us",
-    rating: 7.8,
-    category: "Marvel",
-    moods: ["Action", "Emotional"],
-    tags: ["MCU Universe", "Top 10 Ranking"],
-    description:
-      "Political pressure splits the Avengers, igniting a major clash between heroes."
+    moods: ["Action", "Fun"],
+    tags: ["Action"],
+    description: "Thor battles to save Asgard and stop Hela in a cosmic adventure."
   },
   {
     title: "Black Panther",
@@ -192,186 +81,69 @@ const curatedMovies = [
     trailer: "https://www.youtube.com/embed/xjDjIWPwcPU",
     rating: 7.3,
     category: "Marvel",
-    moods: ["Action", "Emotional"],
-    tags: ["MCU Universe", "Top 10 Ranking"],
-    description:
-      "T'Challa returns to Wakanda to lead his nation and defend its future."
-  },
-  {
-    title: "Black Widow",
-    poster: "https://image.tmdb.org/t/p/original/qAZ0pzat24kLdO3o8ejmbLxyOac.jpg",
-    trailer: "https://www.youtube.com/embed/Fp9pNPdNwjI",
-    rating: 6.7,
-    category: "Marvel",
     moods: ["Action"],
-    tags: ["MCU Universe", "Action & Hype"],
-    description:
-      "Natasha Romanoff confronts her past and unfinished secrets from her spy life."
-  },
-  {
-    title: "Captain Marvel",
-    poster: "https://image.tmdb.org/t/p/original/AtsgWhDnHTq68L0lLsUrCnM7TjG.jpg",
-    trailer: "https://www.youtube.com/embed/Z1BCujX3pw8",
-    rating: 6.8,
-    category: "Marvel",
-    moods: ["Action"],
-    tags: ["MCU Universe", "Action & Hype"],
-    description:
-      "Carol Danvers becomes one of the universe's most powerful heroes in a galactic war."
+    tags: ["Action"],
+    description: "T'Challa returns to Wakanda and rises as a king and protector."
   },
   {
     title: "Jawan",
     poster: "https://image.tmdb.org/t/p/original/jFt1gS4BGHlK8xt76Y81Alp4dbt.jpg",
-    trailer: "https://www.youtube.com/embed/k8YiqM0Y-78",
+    trailer: "https://www.youtube.com/embed/MWOlnZSnXJo",
     rating: 7.0,
     category: "Bollywood",
-    moods: ["Action", "Emotional"],
-    tags: ["Bollywood Hits", "Action & Hype", "Top 10 Ranking"],
-    description:
-      "A vigilante with a personal mission takes on corruption through daring operations."
+    moods: ["Action", "Fun"],
+    tags: ["Action", "Top10"],
+    description: "A gripping action thriller blending emotion, justice, and big-screen spectacle."
   },
   {
     title: "Pathaan",
-    poster: "https://image.tmdb.org/t/p/original/8YFL5QQVPy3AgrEQxNYVSgiPEbe.jpg",
+    poster: "https://image.tmdb.org/t/p/original/vqu4z0I8b4g3I9fJ4cM0A8Qj7J7.jpg",
     trailer: "https://www.youtube.com/embed/vqu4z34wENw",
-    rating: 6.0,
+    rating: 5.8,
     category: "Bollywood",
     moods: ["Action"],
-    tags: ["Bollywood Hits", "Action & Hype"],
-    description:
-      "An elite RAW agent returns to prevent a major threat to national security."
-  },
-  {
-    title: "Animal",
-    poster: "https://image.tmdb.org/t/p/original/rm8m8nYfD4I2QfFhE9hA6R4qB3h.jpg",
-    trailer: "https://www.youtube.com/embed/uJMCNJP2ipI",
-    rating: 6.2,
-    category: "Bollywood",
-    moods: ["Action", "Emotional"],
-    tags: ["Bollywood Hits", "Action & Hype"],
-    description:
-      "A turbulent father-son bond spirals into violent conflict and high-stakes revenge."
-  },
-  {
-    title: "Dunki",
-    poster: "https://image.tmdb.org/t/p/original/8xV47NDrjdZDpkVcCFqkdHa3T0C.jpg",
-    trailer: "https://www.youtube.com/embed/ACKQDAlAfFE",
-    rating: 6.8,
-    category: "Bollywood",
-    moods: ["Emotional"],
-    tags: ["Bollywood Hits", "Top 10 Ranking"],
-    description:
-      "A heartfelt story of friendship and migration dreams across borders."
-  },
-  {
-    title: "Brahmāstra: Part One – Shiva",
-    poster: "https://image.tmdb.org/t/p/original/x61qdvHIsr9U53FwoLVDQqAGur0.jpg",
-    trailer: "https://www.youtube.com/embed/BUjXzrgntcY",
-    rating: 5.6,
-    category: "Bollywood",
-    moods: ["Mind-blowing", "Action"],
-    tags: ["Bollywood Hits", "Mind-blowing Movies"],
-    description:
-      "A young man discovers cosmic powers and his place in an ancient astraverse."
+    tags: ["Action"],
+    description: "An elite operative returns for a high-risk mission with global stakes."
   },
   {
     title: "12th Fail",
-    poster: "https://image.tmdb.org/t/p/original/6nTQp7jJbN2QWf9eKJeNEqXWiwx.jpg",
-    trailer: "https://www.youtube.com/embed/WeMjo70nA0Y",
-    rating: 8.8,
+    poster: "https://image.tmdb.org/t/p/original/6eM4lR5G2fY5D8yP4K8fS7vQd3W.jpg",
+    trailer: "https://www.youtube.com/embed/WeMjo701Ni8",
+    rating: 8.7,
     category: "Bollywood",
-    moods: ["Emotional"],
-    tags: ["Bollywood Hits", "Top 10 Ranking"],
-    description:
-      "An inspiring true-story journey of resilience, education, and public service dreams."
-  },
-  {
-    title: "Sardar Udham",
-    poster: "https://image.tmdb.org/t/p/original/8OnqfWvM7F4eYzY1f3T5iAG2wE8.jpg",
-    trailer: "https://www.youtube.com/embed/bLWuJxY7Y5I",
-    rating: 8.4,
-    category: "Bollywood",
-    moods: ["Emotional", "Mind-blowing"],
-    tags: ["Bollywood Hits", "Mind-blowing Movies"],
-    description:
-      "A deeply moving historical drama about sacrifice, justice, and remembrance."
+    moods: ["Mind-blowing", "Fun"],
+    tags: ["Top10", "Mind"],
+    description: "An inspiring story of perseverance, ambition, and education against all odds."
   },
   {
     title: "Shershaah",
-    poster: "https://image.tmdb.org/t/p/original/bv8f1VdAqQzK8h0pV3Y8W4x2f8i.jpg",
+    poster: "https://image.tmdb.org/t/p/original/52SgH0kLiSpWdJDOZvhAyy34uhe.jpg",
     trailer: "https://www.youtube.com/embed/Q0FTXnefVBA",
-    rating: 8.3,
-    category: "Bollywood",
-    moods: ["Action", "Emotional"],
-    tags: ["Bollywood Hits", "Top 10 Ranking"],
-    description:
-      "A stirring war biopic honoring the life and courage of Captain Vikram Batra."
-  },
-  {
-    title: "Article 15",
-    poster: "https://image.tmdb.org/t/p/original/2M2JxEv3rFf2W6P7v4Q1rM6Y7d8.jpg",
-    trailer: "https://www.youtube.com/embed/nnXpbTFrqXA",
-    rating: 8.1,
-    category: "Bollywood",
-    moods: ["Mind-blowing", "Emotional"],
-    tags: ["Bollywood Hits", "Mind-blowing Movies"],
-    description:
-      "A principled officer investigates a disturbing case that reveals social injustice."
-  },
-  {
-    title: "Andhadhun",
-    poster: "https://image.tmdb.org/t/p/original/qfB6QNaCtmGDy9ujvBOUs7UaPx.jpg",
-    trailer: "https://www.youtube.com/embed/2iVYI99VGaw",
-    rating: 8.2,
-    category: "Bollywood",
-    moods: ["Mind-blowing"],
-    tags: ["Bollywood Hits", "Mind-blowing Movies"],
-    description:
-      "A clever thriller where a pianist gets entangled in mystery and dangerous twists."
-  },
-  {
-    title: "War",
-    poster: "https://image.tmdb.org/t/p/original/4U4J9LQfD9YB4Y8s5I3gkJ2Y6vO.jpg",
-    trailer: "https://www.youtube.com/embed/tQ0mzXRk-oM",
-    rating: 6.5,
+    rating: 8.4,
     category: "Bollywood",
     moods: ["Action"],
-    tags: ["Bollywood Hits", "Action & Hype"],
-    description:
-      "An elite soldier tracks a rogue mentor in a globe-trotting action showdown."
-  },
-  {
-    title: "Tiger 3",
-    poster: "https://image.tmdb.org/t/p/original/2vFuG6bWGyQUzYS9d69E5l85nIz.jpg",
-    trailer: "https://www.youtube.com/embed/vEjTUDjjU6A",
-    rating: 5.9,
-    category: "Bollywood",
-    moods: ["Action"],
-    tags: ["Bollywood Hits", "Action & Hype"],
-    description:
-      "A spy fights to clear his name while protecting his family and country."
+    tags: ["Top10"],
+    description: "A patriotic war drama honoring the courage of Captain Vikram Batra."
   },
   {
     title: "RRR",
-    poster: "https://image.tmdb.org/t/p/original/lO5e4wZzP3qW1f6x8Q3G1R2Z4dY.jpg",
-    trailer: "https://www.youtube.com/embed/GY4BgdUSpbE",
+    poster: "https://image.tmdb.org/t/p/original/lrWj4MV7h9f8hYvJQvP8H4fR5xR.jpg",
+    trailer: "https://www.youtube.com/embed/f_vbAtFSEc0",
     rating: 7.8,
     category: "Bollywood",
-    moods: ["Action", "Emotional", "Mind-blowing"],
-    tags: ["Bollywood Hits", "Top 10 Ranking", "Action & Hype"],
-    description:
-      "Two revolutionaries forge a legendary friendship in an epic freedom-era saga."
+    moods: ["Action", "Fun"],
+    tags: ["Action", "Top10"],
+    description: "A high-energy epic about friendship, resistance, and larger-than-life action."
   },
   {
     title: "KGF: Chapter 2",
-    poster: "https://image.tmdb.org/t/p/original/khNv8hMri0f9LwN8O7aKJ1a7s2F.jpg",
+    poster: "https://image.tmdb.org/t/p/original/khNVygolU0TxLIDWff5tQlAhZ23.jpg",
     trailer: "https://www.youtube.com/embed/JKa05nyUmuQ",
     rating: 8.3,
     category: "Bollywood",
-    moods: ["Action", "Mind-blowing"],
-    tags: ["Bollywood Hits", "Top 10 Ranking", "Action & Hype"],
-    description:
-      "Rocky's empire grows while enemies and political forces rise against him."
+    moods: ["Action"],
+    tags: ["Action", "Top10"],
+    description: "Rocky’s rise continues in a gritty power saga filled with style and intensity."
   },
   {
     title: "Inception",
@@ -380,9 +152,8 @@ const curatedMovies = [
     rating: 8.8,
     category: "Hollywood",
     moods: ["Mind-blowing", "Action"],
-    tags: ["Hollywood Classics", "Mind-blowing Movies", "Top 10 Ranking"],
-    description:
-      "A skilled extractor enters dreams to plant an idea in a target's subconscious."
+    tags: ["Mind", "Top10"],
+    description: "A dream-heist thriller where reality bends across layered subconscious worlds."
   },
   {
     title: "Interstellar",
@@ -390,10 +161,9 @@ const curatedMovies = [
     trailer: "https://www.youtube.com/embed/zSWdZVtXT7E",
     rating: 8.7,
     category: "Hollywood",
-    moods: ["Mind-blowing", "Emotional"],
-    tags: ["Hollywood Classics", "Mind-blowing Movies", "Top 10 Ranking"],
-    description:
-      "Explorers travel through a wormhole in space to ensure humanity's survival."
+    moods: ["Mind-blowing"],
+    tags: ["Mind", "Top10"],
+    description: "A space odyssey about survival, time, and humanity’s search for a new home."
   },
   {
     title: "The Dark Knight",
@@ -402,20 +172,8 @@ const curatedMovies = [
     rating: 9.0,
     category: "Hollywood",
     moods: ["Action", "Mind-blowing"],
-    tags: ["Hollywood Classics", "Top 10 Ranking", "Action & Hype"],
-    description:
-      "Batman faces the Joker in a gripping battle that tests Gotham's moral limits."
-  },
-  {
-    title: "Fight Club",
-    poster: "https://image.tmdb.org/t/p/original/bptfVGEQuv6vDTIMVCHjJ9Dz8PX.jpg",
-    trailer: "https://www.youtube.com/embed/qtRKdVHc-cE",
-    rating: 8.8,
-    category: "Hollywood",
-    moods: ["Mind-blowing"],
-    tags: ["Hollywood Classics", "Mind-blowing Movies"],
-    description:
-      "A disillusioned man forms an underground club that evolves into something unexpected."
+    tags: ["Action", "Top10"],
+    description: "Batman faces the Joker in a tense, iconic crime thriller."
   },
   {
     title: "The Matrix",
@@ -424,75 +182,28 @@ const curatedMovies = [
     rating: 8.7,
     category: "Hollywood",
     moods: ["Mind-blowing", "Action"],
-    tags: ["Hollywood Classics", "Mind-blowing Movies", "Top 10 Ranking"],
-    description:
-      "A hacker discovers reality is a simulation and joins a rebellion for freedom."
+    tags: ["Mind", "Top10"],
+    description: "A hacker uncovers a shocking reality and joins a rebellion for freedom."
   },
   {
     title: "The Shawshank Redemption",
     poster: "https://image.tmdb.org/t/p/original/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
-    trailer: "https://www.youtube.com/embed/6hB3S9bIaco",
+    trailer: "https://www.youtube.com/embed/PLl99DlL6b4",
     rating: 9.3,
     category: "Hollywood",
-    moods: ["Emotional"],
-    tags: ["Hollywood Classics", "Top 10 Ranking"],
-    description:
-      "A timeless story of hope, friendship, and resilience inside prison walls."
+    moods: ["Mind-blowing"],
+    tags: ["Top10"],
+    description: "A timeless story of hope and resilience inside a prison system."
   },
   {
     title: "Forrest Gump",
-    poster: "https://image.tmdb.org/t/p/original/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg",
+    poster: "https://image.tmdb.org/t/p/original/saHP97rTPS5eLmrLQEcANmKrsFl.jpg",
     trailer: "https://www.youtube.com/embed/bLvqoHBptjg",
     rating: 8.8,
     category: "Hollywood",
-    moods: ["Emotional"],
-    tags: ["Hollywood Classics", "Top 10 Ranking"],
-    description:
-      "A kind-hearted man unintentionally witnesses and influences pivotal moments in history."
-  },
-  {
-    title: "The Pursuit of Happyness",
-    poster: "https://image.tmdb.org/t/p/original/f6l9rghXnJf7Q9M8M8s0JvK7E7h.jpg",
-    trailer: "https://www.youtube.com/embed/89Kq8SDyvfg",
-    rating: 8.0,
-    category: "Hollywood",
-    moods: ["Emotional"],
-    tags: ["Hollywood Classics"],
-    description:
-      "A struggling father fights adversity while striving to build a better future."
-  },
-  {
-    title: "Good Will Hunting",
-    poster: "https://image.tmdb.org/t/p/original/z2FnLKpFi1HPO7BEJxdkv6hpJSU.jpg",
-    trailer: "https://www.youtube.com/embed/PaZVjZEFkRs",
-    rating: 8.3,
-    category: "Hollywood",
-    moods: ["Emotional"],
-    tags: ["Hollywood Classics"],
-    description:
-      "A gifted young janitor discovers his potential through guidance and self-discovery."
-  },
-  {
-    title: "The Green Mile",
-    poster: "https://image.tmdb.org/t/p/original/velWPhVMQeQKcxggNEU8YmIo52R.jpg",
-    trailer: "https://www.youtube.com/embed/Ki4haFrqSrw",
-    rating: 8.6,
-    category: "Hollywood",
-    moods: ["Emotional", "Mind-blowing"],
-    tags: ["Hollywood Classics", "Top 10 Ranking"],
-    description:
-      "A prison guard witnesses extraordinary events on death row that challenge belief."
-  },
-  {
-    title: "Mad Max: Fury Road",
-    poster: "https://image.tmdb.org/t/p/original/hA2ple9q4qnwxp3hKVNhroipsir.jpg",
-    trailer: "https://www.youtube.com/embed/hEJnMQG9ev8",
-    rating: 8.1,
-    category: "Hollywood",
-    moods: ["Action"],
-    tags: ["Hollywood Classics", "Action & Hype"],
-    description:
-      "In a post-apocalyptic desert, rebels race for survival in relentless action."
+    moods: ["Fun"],
+    tags: ["Top10"],
+    description: "An uplifting journey through life, love, and history with Forrest Gump."
   },
   {
     title: "John Wick",
@@ -501,130 +212,106 @@ const curatedMovies = [
     rating: 7.4,
     category: "Hollywood",
     moods: ["Action"],
-    tags: ["Hollywood Classics", "Action & Hype"],
-    description:
-      "A retired hitman returns to the underworld in a stylish quest for justice."
+    tags: ["Action"],
+    description: "A legendary assassin returns for a relentless revenge mission."
   },
   {
-    title: "Gladiator",
-    poster: "https://image.tmdb.org/t/p/original/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg",
-    trailer: "https://www.youtube.com/embed/owK1qxDselE",
-    rating: 8.5,
+    title: "Mad Max: Fury Road",
+    poster: "https://image.tmdb.org/t/p/original/hA2ple9q4qnwxp3hKVNhroipsir.jpg",
+    trailer: "https://www.youtube.com/embed/hEJnMQG9ev8",
+    rating: 8.1,
     category: "Hollywood",
-    moods: ["Action", "Emotional"],
-    tags: ["Hollywood Classics", "Top 10 Ranking"],
-    description:
-      "A Roman general seeks honor and vengeance after betrayal by a corrupt emperor."
-  },
-  {
-    title: "Pulp Fiction",
-    poster: "https://image.tmdb.org/t/p/original/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg",
-    trailer: "https://www.youtube.com/embed/s7EdQ4FqbhY",
-    rating: 8.9,
-    category: "Hollywood",
-    moods: ["Mind-blowing"],
-    tags: ["Hollywood Classics", "Mind-blowing Movies"],
-    description:
-      "Interconnected stories of crime and consequence unfold with unforgettable style."
-  },
-  {
-    title: "The Wolf of Wall Street",
-    poster: "https://image.tmdb.org/t/p/original/34m2tygAYBGqA9MXKhRDtzYd4MR.jpg",
-    trailer: "https://www.youtube.com/embed/iszwuX1AK6A",
-    rating: 8.2,
-    category: "Hollywood",
-    moods: ["Mind-blowing"],
-    tags: ["Hollywood Classics"],
-    description:
-      "A stockbroker rises rapidly through excess, ambition, and high-risk finance."
-  },
-  {
-    title: "Se7en",
-    poster: "https://image.tmdb.org/t/p/original/6yoghtyTpznpBik8EngEmJskVUO.jpg",
-    trailer: "https://www.youtube.com/embed/znmZoVkCjpI",
-    rating: 8.6,
-    category: "Hollywood",
-    moods: ["Mind-blowing"],
-    tags: ["Hollywood Classics", "Mind-blowing Movies"],
-    description:
-      "Two detectives hunt a serial killer inspired by the seven deadly sins."
-  },
-  {
-    title: "Parasite",
-    poster: "https://image.tmdb.org/t/p/original/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
-    trailer: "https://www.youtube.com/embed/5xH0HfJHsaY",
-    rating: 8.5,
-    category: "Hollywood",
-    moods: ["Mind-blowing", "Emotional"],
-    tags: ["Hollywood Classics", "Mind-blowing Movies", "Top 10 Ranking"],
-    description:
-      "A gripping social thriller where class divides lead to unexpected consequences."
-  },
-  {
-    title: "Joker",
-    poster: "https://image.tmdb.org/t/p/original/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg",
-    trailer: "https://www.youtube.com/embed/zAGVQLHvwOY",
-    rating: 8.4,
-    category: "Hollywood",
-    moods: ["Emotional", "Mind-blowing"],
-    tags: ["Hollywood Classics", "Top 10 Ranking"],
-    description:
-      "A troubled comedian's descent reshapes Gotham in this powerful character study."
+    moods: ["Action", "Mind-blowing"],
+    tags: ["Action"],
+    description: "A high-octane chase across a post-apocalyptic wasteland."
   }
 ];
 
-const STORAGE_KEYS = {
+const SPORTS_QUERIES = {
+  cricket: "IPL highlights 2025",
+  football: "football highlights UCL",
+  chess: "chess championship highlights",
+  badminton: "badminton highlights"
+};
+
+const STORAGE = {
   users: "primeStream.users",
-  currentUser: "primeStream.currentUser",
-  prefs: "primeStream.preferences",
-  fallbackRecent: "primeStream.recentlyViewed.guest",
-  fallbackContinue: "primeStream.continueWatching.guest"
+  user: "primeStream.user",
+  fallbackRecent: "primeStream.guest.recent",
+  fallbackContinue: "primeStream.guest.continue"
 };
 
 const state = {
-  view: "home",
-  authMode: "login",
-  heroMovie: null,
+  section: "home",
+  mood: "Action",
+  newsFilter: "all",
+  sportsTab: "cricket",
   pendingAction: null,
+  news: [],
+  sportsVideos: [],
   hoverTimers: {},
-  searchTimer: null
+  heroMovie: MOVIES.find((movie) => movie.title.includes("Spider-Man")) || MOVIES[0],
+  lastScrollY: 0
 };
 
 const el = {
-  navTabs: document.getElementById("navTabs"),
-  searchInput: document.getElementById("searchInput"),
-  searchSuggestions: document.getElementById("searchSuggestions"),
+  navbar: document.getElementById("navbar"),
+  homeBtn: document.getElementById("homeBtn"),
+  sectionBtn: document.getElementById("sectionBtn"),
+  myListBtn: document.getElementById("myListBtn"),
+  globalSearch: document.getElementById("globalSearch"),
   themeToggle: document.getElementById("themeToggle"),
-  languageToggle: document.getElementById("languageToggle"),
   profileBtn: document.getElementById("profileBtn"),
   profileMenu: document.getElementById("profileMenu"),
-  profileName: document.getElementById("profileName"),
-  mobileNavBtn: document.getElementById("mobileNavBtn"),
-  heroBackdrop: document.getElementById("heroBackdrop"),
-  heroTitle: document.getElementById("heroTitle"),
-  heroMeta: document.getElementById("heroMeta"),
-  heroOverview: document.getElementById("heroOverview"),
-  heroTrailerWrap: document.getElementById("heroTrailerWrap"),
+
+  landingView: document.getElementById("landingView"),
+  categoryCards: Array.from(document.querySelectorAll(".category-card")),
+
+  moviesView: document.getElementById("moviesView"),
+  movieHeroBackdrop: document.getElementById("movieHeroBackdrop"),
+  movieHeroTitle: document.getElementById("movieHeroTitle"),
+  movieHeroMeta: document.getElementById("movieHeroMeta"),
+  movieHeroDescription: document.getElementById("movieHeroDescription"),
+  movieHeroTrailer: document.getElementById("movieHeroTrailer"),
   heroTrailerBtn: document.getElementById("heroTrailerBtn"),
   heroWatchlistBtn: document.getElementById("heroWatchlistBtn"),
-  moodButtons: Array.from(document.querySelectorAll("[data-mood]")),
   quickPlayBtn: document.getElementById("quickPlayBtn"),
-  top10List: document.getElementById("top10List"),
-  homeRows: document.getElementById("homeRows"),
-  marvelGrid: document.getElementById("marvelGrid"),
-  bollywoodGrid: document.getElementById("bollywoodGrid"),
-  hollywoodGrid: document.getElementById("hollywoodGrid"),
-  myListGrid: document.getElementById("myListGrid"),
+  moodButtons: Array.from(document.querySelectorAll("[data-mood]")),
+  moodGrid: document.getElementById("moodGrid"),
   smartPicksGrid: document.getElementById("smartPicksGrid"),
-  topLikedGrid: document.getElementById("topLikedGrid"),
-  moodResultsGrid: document.getElementById("moodResultsGrid"),
+  topPicksGrid: document.getElementById("topPicksGrid"),
+  top10List: document.getElementById("top10List"),
+  continueGrid: document.getElementById("continueGrid"),
+  mcuGrid: document.getElementById("mcuGrid"),
+  bollyGrid: document.getElementById("bollyGrid"),
+  hollyGrid: document.getElementById("hollyGrid"),
+  actionGrid: document.getElementById("actionGrid"),
+  mindGrid: document.getElementById("mindGrid"),
+  myListView: document.getElementById("myListView"),
+  myListGrid: document.getElementById("myListGrid"),
+
+  newsView: document.getElementById("newsView"),
+  newsFilterButtons: Array.from(document.querySelectorAll("[data-news-filter]")),
+  refreshNewsBtn: document.getElementById("refreshNewsBtn"),
+  newsGrid: document.getElementById("newsGrid"),
+
+  sportsView: document.getElementById("sportsView"),
+  sportsFilterButtons: Array.from(document.querySelectorAll("[data-sports-filter]")),
+  sportsTopGrid: document.getElementById("sportsTopGrid"),
+  sportsPlayerGrid: document.getElementById("sportsPlayerGrid"),
+
+  scrollTopBtn: document.getElementById("scrollTopBtn"),
+  toastStack: document.getElementById("toastStack"),
+
   trailerModal: document.getElementById("trailerModal"),
   trailerFrame: document.getElementById("trailerFrame"),
   movieModal: document.getElementById("movieModal"),
   movieModalBody: document.getElementById("movieModalBody"),
+  videoModal: document.getElementById("videoModal"),
+  videoFrame: document.getElementById("videoFrame"),
   authModal: document.getElementById("authModal"),
-  authForm: document.getElementById("authForm"),
   authTitle: document.getElementById("authTitle"),
+  authForm: document.getElementById("authForm"),
   nameFieldWrap: document.getElementById("nameFieldWrap"),
   confirmFieldWrap: document.getElementById("confirmFieldWrap"),
   authName: document.getElementById("authName"),
@@ -632,12 +319,10 @@ const el = {
   authPassword: document.getElementById("authPassword"),
   authConfirm: document.getElementById("authConfirm"),
   authSubmitBtn: document.getElementById("authSubmitBtn"),
-  authSwitchBtn: document.getElementById("authSwitchBtn"),
-  toastStack: document.getElementById("toastStack"),
-  scrollTopBtn: document.getElementById("scrollTopBtn"),
-  navbar: document.getElementById("navbar"),
-  yearText: document.getElementById("yearText")
+  authSwitchBtn: document.getElementById("authSwitchBtn")
 };
+
+let authMode = "login";
 
 function getJSON(key, fallback) {
   try {
@@ -653,87 +338,92 @@ function setJSON(key, value) {
 }
 
 function getUsers() {
-  return getJSON(STORAGE_KEYS.users, []);
+  return getJSON(STORAGE.users, []);
 }
 
 function setUsers(users) {
-  setJSON(STORAGE_KEYS.users, users);
+  setJSON(STORAGE.users, users);
 }
 
 function getCurrentUser() {
-  return getJSON(STORAGE_KEYS.currentUser, null);
+  return getJSON(STORAGE.user, null);
 }
 
 function setCurrentUser(user) {
   if (user) {
-    setJSON(STORAGE_KEYS.currentUser, user);
+    setJSON(STORAGE.user, user);
   } else {
-    localStorage.removeItem(STORAGE_KEYS.currentUser);
+    localStorage.removeItem(STORAGE.user);
   }
 }
 
-function scopedKey(name) {
-  const uid = getCurrentUser()?.id;
-  return uid ? `primeStream.${name}.${uid}` : null;
-}
-
-function getScoped(name, fallback) {
-  const key = scopedKey(name);
-  if (key) {
-    return getJSON(key, fallback);
-  }
-  const fallbackKey = name === "recent" ? STORAGE_KEYS.fallbackRecent : STORAGE_KEYS.fallbackContinue;
-  return getJSON(fallbackKey, fallback);
-}
-
-function setScoped(name, value) {
-  const key = scopedKey(name);
-  if (key) {
-    setJSON(key, value);
-    return;
-  }
-  const fallbackKey = name === "recent" ? STORAGE_KEYS.fallbackRecent : STORAGE_KEYS.fallbackContinue;
-  setJSON(fallbackKey, value);
+function userScopedKey(scope) {
+  const user = getCurrentUser();
+  return user ? `primeStream.${scope}.${user.id}` : null;
 }
 
 function getWatchlist() {
-  return getScoped("watchlist", []);
+  const key = userScopedKey("watchlist");
+  return key ? getJSON(key, []) : [];
 }
 
-function setWatchlist(ids) {
-  setScoped("watchlist", ids);
+function setWatchlist(watchlist) {
+  const key = userScopedKey("watchlist");
+  if (key) {
+    setJSON(key, watchlist);
+  }
 }
 
 function getLikes() {
-  return getScoped("likes", {});
+  const key = userScopedKey("likes");
+  return key ? getJSON(key, {}) : {};
 }
 
 function setLikes(map) {
-  setScoped("likes", map);
+  const key = userScopedKey("likes");
+  if (key) {
+    setJSON(key, map);
+  }
 }
 
 function getRatings() {
-  return getScoped("ratings", {});
+  const key = userScopedKey("ratings");
+  return key ? getJSON(key, {}) : {};
 }
 
 function setRatings(map) {
-  setScoped("ratings", map);
-}
-
-function getRecentlyViewed() {
-  return getScoped("recent", []);
-}
-
-function setRecentlyViewed(ids) {
-  setScoped("recent", ids.slice(0, 30));
+  const key = userScopedKey("ratings");
+  if (key) {
+    setJSON(key, map);
+  }
 }
 
 function getContinueWatching() {
-  return getScoped("continue", {});
+  const key = userScopedKey("continue");
+  return key ? getJSON(key, {}) : getJSON(STORAGE.fallbackContinue, {});
 }
 
 function setContinueWatching(map) {
-  setScoped("continue", map);
+  const key = userScopedKey("continue");
+  if (key) {
+    setJSON(key, map);
+  } else {
+    setJSON(STORAGE.fallbackContinue, map);
+  }
+}
+
+function getRecentlyViewed() {
+  const key = userScopedKey("recent");
+  return key ? getJSON(key, []) : getJSON(STORAGE.fallbackRecent, []);
+}
+
+function setRecentlyViewed(list) {
+  const key = userScopedKey("recent");
+  if (key) {
+    setJSON(key, list.slice(0, 40));
+  } else {
+    setJSON(STORAGE.fallbackRecent, list.slice(0, 40));
+  }
 }
 
 function toast(message) {
@@ -741,7 +431,7 @@ function toast(message) {
   node.className = "toast";
   node.textContent = message;
   el.toastStack.appendChild(node);
-  setTimeout(() => node.remove(), 2400);
+  setTimeout(() => node.remove(), 2600);
 }
 
 function openModal(modal) {
@@ -752,6 +442,9 @@ function closeModal(modal) {
   modal.classList.remove("open");
   if (modal === el.trailerModal) {
     el.trailerFrame.src = "";
+  }
+  if (modal === el.videoModal) {
+    el.videoFrame.src = "";
   }
 }
 
@@ -765,7 +458,7 @@ function ensureAuth(action) {
   return false;
 }
 
-function performPendingAction() {
+function runPendingAction() {
   if (!state.pendingAction) {
     return;
   }
@@ -774,48 +467,542 @@ function performPendingAction() {
   action();
 }
 
-function dedupeMovies(movies) {
-  const seen = new Set();
-  return movies.filter((movie) => {
-    if (seen.has(movie.title)) {
-      return false;
-    }
-    seen.add(movie.title);
-    return true;
+function movieByTitle(title) {
+  return MOVIES.find((movie) => movie.title === title);
+}
+
+function applySection(section) {
+  state.section = section;
+  const allViews = [el.landingView, el.moviesView, el.newsView, el.sportsView, el.myListView];
+  allViews.forEach((node) => node.classList.add("hidden"));
+
+  if (section === "home") {
+    el.landingView.classList.remove("hidden");
+    el.navbar.classList.add("hidden");
+    return;
+  }
+
+  el.navbar.classList.remove("hidden");
+  el.sectionBtn.textContent =
+    section === "movies"
+      ? "Movies"
+      : section === "news"
+      ? "World News"
+      : section === "sports"
+      ? "Sports Highlights"
+      : "My List";
+  el.myListBtn.classList.toggle("hidden", section !== "movies");
+
+  if (section === "movies") {
+    el.moviesView.classList.remove("hidden");
+  } else if (section === "news") {
+    el.newsView.classList.remove("hidden");
+  } else if (section === "sports") {
+    el.sportsView.classList.remove("hidden");
+  } else if (section === "mylist") {
+    el.myListView.classList.remove("hidden");
+  }
+}
+
+function updateHero(movie) {
+  state.heroMovie = movie;
+  el.movieHeroTitle.textContent = movie.title;
+  el.movieHeroMeta.textContent = `${movie.category} • ⭐ ${movie.rating.toFixed(1)}/10`;
+  el.movieHeroDescription.textContent = movie.description;
+  el.movieHeroBackdrop.style.backgroundImage = `url(${movie.poster})`;
+  const sep = movie.trailer.includes("?") ? "&" : "?";
+  el.movieHeroTrailer.innerHTML = `
+    <iframe
+      title="Hero trailer preview"
+      src="${movie.trailer}${sep}autoplay=1&mute=1&controls=0&loop=1"
+      allow="autoplay; encrypted-media; picture-in-picture"
+    ></iframe>
+  `;
+}
+
+function movieCardTemplate(movie, options = {}) {
+  const inList = getWatchlist().includes(movie.title);
+  const progress = getContinueWatching()[movie.title] || 0;
+  return `
+    <article class="movie-card reveal" data-movie-title="${movie.title}">
+      <img loading="lazy" src="${movie.poster}" alt="${movie.title}" />
+      <div class="movie-card-info">
+        <h4>${movie.title}</h4>
+        <p>⭐ ${movie.rating.toFixed(1)}</p>
+      </div>
+      ${
+        options.showProgress
+          ? `<div class="progress-wrap"><div class="progress-bar" style="width:${Math.min(
+              progress,
+              100
+            )}%"></div></div>`
+          : ""
+      }
+      <div class="movie-hover">
+        <div class="movie-actions">
+          <button class="mini-btn" data-action="play-movie" data-title="${movie.title}">▶ Trailer</button>
+          <button class="mini-btn" data-action="watchlist" data-title="${movie.title}">
+            ${inList ? "− Watchlist" : "+ Watchlist"}
+          </button>
+          <button class="mini-btn" data-action="rate" data-title="${movie.title}">⭐ Rate</button>
+          <button class="mini-btn" data-action="like" data-title="${movie.title}">👍 Like</button>
+        </div>
+        <div class="hover-preview" data-preview-title="${movie.title}"></div>
+      </div>
+    </article>
+  `;
+}
+
+function renderMovieSkeletons() {
+  const skeleton = Array.from({ length: 8 })
+    .map(() => `<div class="skeleton-card"></div>`)
+    .join("");
+  [
+    el.moodGrid,
+    el.smartPicksGrid,
+    el.topPicksGrid,
+    el.continueGrid,
+    el.mcuGrid,
+    el.bollyGrid,
+    el.hollyGrid,
+    el.actionGrid,
+    el.mindGrid,
+    el.myListGrid
+  ].forEach((node) => {
+    node.innerHTML = skeleton;
   });
 }
 
-const movies = dedupeMovies(curatedMovies);
-
-function movieByTitle(title) {
-  return movies.find((movie) => movie.title === title);
+function renderTop10() {
+  const top = [...MOVIES].sort((a, b) => b.rating - a.rating).slice(0, 10);
+  el.top10List.innerHTML = top
+    .map(
+      (movie, idx) => `
+      <li>
+        <span>#${idx + 1}</span>
+        <button data-action="open-movie" data-title="${movie.title}">${movie.title}</button>
+      </li>
+    `
+    )
+    .join("");
 }
 
-function stars(ratingOut10) {
-  const out5 = Math.round(ratingOut10 / 2);
-  return `${"★".repeat(out5)}${"☆".repeat(5 - out5)}`;
+function renderMovieRows() {
+  const marvel = MOVIES.filter((movie) => movie.category === "Marvel");
+  const bolly = MOVIES.filter((movie) => movie.category === "Bollywood");
+  const holly = MOVIES.filter((movie) => movie.category === "Hollywood");
+  const action = MOVIES.filter((movie) => movie.tags.includes("Action"));
+  const mind = MOVIES.filter((movie) => movie.tags.includes("Mind"));
+  el.mcuGrid.innerHTML = marvel.map((movie) => movieCardTemplate(movie)).join("");
+  el.bollyGrid.innerHTML = bolly.map((movie) => movieCardTemplate(movie)).join("");
+  el.hollyGrid.innerHTML = holly.map((movie) => movieCardTemplate(movie)).join("");
+  el.actionGrid.innerHTML = action.map((movie) => movieCardTemplate(movie)).join("");
+  el.mindGrid.innerHTML = mind.map((movie) => movieCardTemplate(movie)).join("");
 }
 
-function formatRating(value) {
-  return `⭐ ${value.toFixed(1)}/10`;
+function renderMyList() {
+  const list = getWatchlist()
+    .map(movieByTitle)
+    .filter(Boolean);
+  el.myListGrid.innerHTML = list.length
+    ? list.map((movie) => movieCardTemplate(movie)).join("")
+    : `<p class="empty-text">Login and add movies to your watchlist.</p>`;
 }
 
-function updateProfileHeader() {
-  const user = getCurrentUser();
-  el.profileName.textContent = user?.name || "Guest";
+function renderContinueWatching() {
+  const map = getContinueWatching();
+  const list = Object.keys(map)
+    .map(movieByTitle)
+    .filter(Boolean)
+    .slice(0, 8);
+  el.continueGrid.innerHTML = list.length
+    ? list.map((movie) => movieCardTemplate(movie, { showProgress: true })).join("")
+    : `<p class="empty-text">Start watching to build progress.</p>`;
 }
 
-function profileMenuHTML() {
+function renderTopPicks() {
+  const likes = getLikes();
+  const list = Object.keys(likes)
+    .filter((title) => likes[title])
+    .map(movieByTitle)
+    .filter(Boolean);
+  el.topPicksGrid.innerHTML = list.length
+    ? list.map((movie) => movieCardTemplate(movie)).join("")
+    : `<p class="empty-text">Like movies to see Top Picks by You.</p>`;
+}
+
+function renderSmartPicks() {
+  const likes = getLikes();
+  const likedMovies = Object.keys(likes)
+    .filter((title) => likes[title])
+    .map(movieByTitle)
+    .filter(Boolean);
+
+  if (!likedMovies.length) {
+    el.smartPicksGrid.innerHTML = MOVIES.slice(0, 8).map((movie) => movieCardTemplate(movie)).join("");
+    return;
+  }
+
+  const categories = new Set(likedMovies.map((movie) => movie.category));
+  const moods = new Set(likedMovies.flatMap((movie) => movie.moods));
+  const picks = MOVIES.filter(
+    (movie) =>
+      !likes[movie.title] &&
+      (categories.has(movie.category) || movie.moods.some((mood) => moods.has(mood)))
+  ).slice(0, 10);
+
+  el.smartPicksGrid.innerHTML = picks.length
+    ? picks.map((movie) => movieCardTemplate(movie)).join("")
+    : `<p class="empty-text">No more smart picks available.</p>`;
+}
+
+function renderMoodResults(mood) {
+  state.mood = mood;
+  const list = MOVIES.filter((movie) => movie.moods.includes(mood));
+  el.moodGrid.innerHTML = list.length
+    ? list.map((movie) => movieCardTemplate(movie)).join("")
+    : `<p class="empty-text">No movies for this mood.</p>`;
+}
+
+function trackRecent(title) {
+  const list = getRecentlyViewed().filter((item) => item !== title);
+  list.unshift(title);
+  setRecentlyViewed(list);
+}
+
+function updateContinue(title, amount = 8) {
+  const map = getContinueWatching();
+  map[title] = Math.min(100, (map[title] || 0) + amount);
+  setContinueWatching(map);
+}
+
+function openTrailer(title) {
+  const movie = movieByTitle(title);
+  if (!movie) {
+    return;
+  }
+  const sep = movie.trailer.includes("?") ? "&" : "?";
+  el.trailerFrame.src = `${movie.trailer}${sep}autoplay=1`;
+  openModal(el.trailerModal);
+  updateContinue(title, 10);
+  trackRecent(title);
+  renderContinueWatching();
+}
+
+function openMovieModal(title) {
+  const movie = movieByTitle(title);
+  if (!movie) {
+    return;
+  }
+  const inList = getWatchlist().includes(title);
+  const selected = Number(getRatings()[title] || 0);
+  el.movieModalBody.innerHTML = `
+    <div class="details-hero" style="background-image:url('${movie.poster}')"></div>
+    <div class="details-content">
+      <img class="details-poster" src="${movie.poster}" alt="${movie.title}" />
+      <div>
+        <h2>${movie.title}</h2>
+        <p class="details-meta">${movie.category} • ⭐ ${movie.rating.toFixed(1)}</p>
+        <p>${movie.description}</p>
+        <div class="details-actions">
+          <button class="primary-btn" data-action="play-movie" data-title="${movie.title}">▶ Play</button>
+          <button class="ghost-btn" data-action="watchlist" data-title="${movie.title}">
+            ${inList ? "− Remove Watchlist" : "+ Add Watchlist"}
+          </button>
+        </div>
+        <div class="rating-inline">
+          ${[1, 2, 3, 4, 5]
+            .map(
+              (star) =>
+                `<button class="rate-btn ${selected >= star ? "active" : ""}" data-rate="${star}" data-title="${
+                  movie.title
+                }">★</button>`
+            )
+            .join("")}
+        </div>
+        <div class="details-trailer">
+          <iframe title="Movie trailer" src="${movie.trailer}" allowfullscreen></iframe>
+        </div>
+      </div>
+    </div>
+  `;
+  openModal(el.movieModal);
+  trackRecent(title);
+  updateContinue(title, 4);
+  renderContinueWatching();
+}
+
+function toggleWatchlist(title) {
+  if (
+    !ensureAuth(() => {
+      toggleWatchlist(title);
+    })
+  ) {
+    return;
+  }
+  const list = getWatchlist();
+  const exists = list.includes(title);
+  const next = exists ? list.filter((item) => item !== title) : [...list, title];
+  setWatchlist(next);
+  toast(exists ? "Removed from Watchlist" : "Added to Watchlist");
+  renderMyList();
+  renderMovieRows();
+  renderSmartPicks();
+}
+
+function likeMovie(title) {
+  if (
+    !ensureAuth(() => {
+      likeMovie(title);
+    })
+  ) {
+    return;
+  }
+  const likes = getLikes();
+  likes[title] = true;
+  setLikes(likes);
+  toast("Added to Top Picks");
+  renderTopPicks();
+  renderSmartPicks();
+}
+
+function rateMovie(title, rating) {
+  if (
+    !ensureAuth(() => {
+      rateMovie(title, rating);
+    })
+  ) {
+    return;
+  }
+  const ratings = getRatings();
+  ratings[title] = rating;
+  setRatings(ratings);
+  toast("Rating saved");
+  openMovieModal(title);
+}
+
+function quickPlay() {
+  const random = MOVIES[Math.floor(Math.random() * MOVIES.length)];
+  if (
+    !ensureAuth(() => {
+      openTrailer(random.title);
+    })
+  ) {
+    return;
+  }
+  openTrailer(random.title);
+}
+
+async function fetchNews() {
+  const response = await fetch(NEWS_URL);
+  if (!response.ok) {
+    throw new Error("News API failed");
+  }
+  const data = await response.json();
+  state.news = data.articles || [];
+}
+
+function formatDate(dateStr) {
+  try {
+    return new Date(dateStr).toLocaleString();
+  } catch (_error) {
+    return "";
+  }
+}
+
+function renderNews(list = state.news) {
+  el.newsGrid.innerHTML = list.length
+    ? list
+        .map(
+          (article) => `
+      <article class="news-card reveal">
+        <img loading="lazy" src="${article.image || "https://via.placeholder.com/800x450?text=News"}" alt="${
+            article.title || "News"
+          }" />
+        <div class="news-card-content">
+          <h3>${article.title || "Untitled"}</h3>
+          <div class="news-meta">
+            <span>${article.source?.name || "Unknown Source"}</span>
+            <span>${formatDate(article.publishedAt)}</span>
+          </div>
+          <a class="read-btn" href="${article.url}" target="_blank" rel="noopener noreferrer">Read Full Story</a>
+        </div>
+      </article>
+    `
+        )
+        .join("")
+    : `<p class="empty-text">No news found.</p>`;
+}
+
+function filterNews(category) {
+  state.newsFilter = category;
+  if (category === "all") {
+    renderNews(state.news);
+    return;
+  }
+  const filtered = state.news.filter((article) => {
+    const text = `${article.title || ""} ${article.description || ""}`.toLowerCase();
+    return text.includes(category);
+  });
+  renderNews(filtered);
+}
+
+function renderNewsSkeletons() {
+  el.newsGrid.innerHTML = Array.from({ length: 8 })
+    .map(() => `<div class="skeleton-card"></div>`)
+    .join("");
+}
+
+async function fetchSports(query) {
+  const url = `${YOUTUBE_BASE}?part=snippet&q=${encodeURIComponent(
+    query
+  )}&maxResults=12&key=${YOUTUBE_API_KEY}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error("YouTube API failed");
+  }
+  const data = await response.json();
+  state.sportsVideos = (data.items || []).filter((item) => item.id?.videoId);
+}
+
+function sportsCardTemplate(item) {
+  const thumb =
+    item.snippet?.thumbnails?.high?.url || item.snippet?.thumbnails?.medium?.url || "";
+  const videoId = item.id.videoId;
+  return `
+    <article class="sports-card reveal">
+      <img loading="lazy" src="${thumb}" alt="${item.snippet.title}" />
+      <div class="sports-card-content">
+        <h3>${item.snippet.title}</h3>
+        <button class="read-btn" data-action="play-sport" data-video-id="${videoId}">▶ Play</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderSports() {
+  el.sportsTopGrid.innerHTML = state.sportsVideos.slice(0, 6).map(sportsCardTemplate).join("");
+  el.sportsPlayerGrid.innerHTML = state.sportsVideos.slice(6, 12).map(sportsCardTemplate).join("");
+  if (!state.sportsVideos.length) {
+    el.sportsTopGrid.innerHTML = `<p class="empty-text">No highlights found.</p>`;
+    el.sportsPlayerGrid.innerHTML = `<p class="empty-text">No highlights found.</p>`;
+  }
+}
+
+function renderSportsSkeletons() {
+  const skeleton = Array.from({ length: 6 })
+    .map(() => `<div class="skeleton-card"></div>`)
+    .join("");
+  el.sportsTopGrid.innerHTML = skeleton;
+  el.sportsPlayerGrid.innerHTML = skeleton;
+}
+
+function runSearch(raw) {
+  const term = raw.trim().toLowerCase();
+  if (!term) {
+    if (state.section === "movies" || state.section === "mylist") {
+      renderMovieRows();
+      renderMoodResults(state.mood);
+      renderSmartPicks();
+      renderTopPicks();
+      renderContinueWatching();
+      renderMyList();
+    } else if (state.section === "news") {
+      filterNews(state.newsFilter);
+    } else if (state.section === "sports") {
+      loadSports(state.sportsTab).catch(() => toast("Sports refresh failed"));
+    }
+    return;
+  }
+
+  if (state.section === "movies" || state.section === "mylist") {
+    const filtered = MOVIES.filter(
+      (movie) =>
+        movie.title.toLowerCase().includes(term) ||
+        movie.category.toLowerCase().includes(term) ||
+        movie.tags.join(" ").toLowerCase().includes(term)
+    );
+    const html = filtered.length
+      ? filtered.map((movie) => movieCardTemplate(movie)).join("")
+      : `<p class="empty-text">No movie match found.</p>`;
+    [
+      el.moodGrid,
+      el.smartPicksGrid,
+      el.topPicksGrid,
+      el.continueGrid,
+      el.mcuGrid,
+      el.bollyGrid,
+      el.hollyGrid,
+      el.actionGrid,
+      el.mindGrid,
+      el.myListGrid
+    ].forEach((node) => {
+      node.innerHTML = html;
+    });
+    return;
+  }
+
+  if (state.section === "news") {
+    const filtered = state.news.filter((article) => {
+      const text = `${article.title || ""} ${article.description || ""}`.toLowerCase();
+      return text.includes(term);
+    });
+    renderNews(filtered);
+    return;
+  }
+
+  if (state.section === "sports") {
+    fetchSports(term)
+      .then(renderSports)
+      .catch(() => toast("Sports search failed"));
+  }
+}
+
+function startHoverPreview(card) {
+  const title = card.dataset.movieTitle;
+  if (!title) {
+    return;
+  }
+  clearTimeout(state.hoverTimers[title]);
+  state.hoverTimers[title] = setTimeout(() => {
+    const movie = movieByTitle(title);
+    const node = card.querySelector(`[data-preview-title="${title}"]`);
+    if (!movie || !node) {
+      return;
+    }
+    node.innerHTML = `
+      <iframe
+        title="Trailer preview"
+        src="${movie.trailer}?autoplay=1&mute=1&controls=0"
+        allow="autoplay; encrypted-media"
+      ></iframe>
+    `;
+    node.classList.add("show");
+  }, 1000);
+}
+
+function stopHoverPreview(card) {
+  const title = card.dataset.movieTitle;
+  clearTimeout(state.hoverTimers[title]);
+  const node = card.querySelector(`[data-preview-title="${title}"]`);
+  if (node) {
+    node.classList.remove("show");
+    node.innerHTML = "";
+  }
+}
+
+function renderProfileMenu() {
   const user = getCurrentUser();
   if (!user) {
-    return `
+    el.profileMenu.innerHTML = `
       <button data-profile-action="login">Login</button>
       <button data-profile-action="signup">Signup</button>
     `;
+    return;
   }
-  return `
+  el.profileMenu.innerHTML = `
     <div class="profile-head">
-      <strong>${user.name || user.email}</strong>
+      <strong>${user.name}</strong>
       <small>${user.email}</small>
     </div>
     <button data-profile-action="profile">Profile</button>
@@ -823,321 +1010,17 @@ function profileMenuHTML() {
   `;
 }
 
-function renderProfileMenu() {
-  el.profileMenu.innerHTML = profileMenuHTML();
-  updateProfileHeader();
-}
-
-function activateView(view) {
-  state.view = view;
-  document.querySelectorAll(".view").forEach((node) => {
-    node.classList.toggle("active", node.id === `view-${view}`);
-  });
-  document.querySelectorAll(".nav-tab").forEach((tab) => {
-    tab.classList.toggle("active", tab.dataset.view === view);
-  });
-}
-
-function incrementContinue(movieTitle, amount = 7) {
-  const map = getContinueWatching();
-  map[movieTitle] = Math.min(100, (map[movieTitle] || 0) + amount);
-  setContinueWatching(map);
-}
-
-function pushRecent(movieTitle) {
-  const list = getRecentlyViewed().filter((title) => title !== movieTitle);
-  list.unshift(movieTitle);
-  setRecentlyViewed(list);
-}
-
-function cardTemplate(movie, options = {}) {
-  const inList = getWatchlist().includes(movie.title);
-  const progress = getContinueWatching()[movie.title] || 0;
-  return `
-    <article class="movie-card" data-title="${movie.title}">
-      <img loading="lazy" src="${movie.poster}" alt="${movie.title}" />
-      <div class="movie-info">
-        <h4>${movie.title}</h4>
-        <p>${stars(movie.rating)} · ${movie.rating.toFixed(1)}</p>
-      </div>
-      ${
-        options.showProgress
-          ? `<div class="progress-wrap"><div class="progress-bar" style="width:${progress}%"></div></div>`
-          : ""
-      }
-      <div class="movie-hover">
-        <div class="hover-actions">
-          <button class="mini-btn" data-action="play" data-title="${movie.title}">▶ Play Trailer</button>
-          <button class="mini-btn" data-action="watchlist" data-title="${movie.title}">
-            ${inList ? "− Watchlist" : "✚ Watchlist"}
-          </button>
-          <button class="mini-btn" data-action="rate" data-title="${movie.title}">⭐ Rate</button>
-          <button class="mini-btn" data-action="like" data-title="${movie.title}">👍 Like</button>
-          <button class="mini-btn" data-action="dislike" data-title="${movie.title}">👎 Dislike</button>
-        </div>
-        <div class="hover-preview" data-preview="${movie.title}"></div>
-      </div>
-    </article>
-  `;
-}
-
-function rowTemplate(title, list, options = {}) {
-  return `
-    <section class="row-block">
-      <div class="row-header"><h3>${title}</h3></div>
-      <div class="row-track">
-        ${list.length ? list.map((movie) => cardTemplate(movie, options)).join("") : `<p class="empty-text">No movies</p>`}
-      </div>
-    </section>
-  `;
-}
-
-function byCategory(category) {
-  return movies.filter((movie) => movie.category === category);
-}
-
-function byTag(tag) {
-  return movies.filter((movie) => movie.tags.includes(tag));
-}
-
-function moodMatches(mood) {
-  return movies.filter((movie) => movie.moods.includes(mood));
-}
-
-function top10() {
-  return [...movies].sort((a, b) => b.rating - a.rating).slice(0, 10);
-}
-
-function getSmartPicks() {
-  const likes = getLikes();
-  const likedTitles = Object.keys(likes).filter((title) => likes[title] === "like");
-  const likedMovies = likedTitles.map(movieByTitle).filter(Boolean);
-  if (!likedMovies.length) {
-    return top10().slice(0, 8);
-  }
-  const preferredCategories = new Set(likedMovies.map((movie) => movie.category));
-  const preferredMoods = new Set(likedMovies.flatMap((movie) => movie.moods));
-  return movies
-    .filter(
-      (movie) =>
-        !likedTitles.includes(movie.title) &&
-        (preferredCategories.has(movie.category) || movie.moods.some((mood) => preferredMoods.has(mood)))
-    )
-    .slice(0, 8);
-}
-
-function getTopLiked() {
-  const likes = getLikes();
-  return Object.keys(likes)
-    .filter((title) => likes[title] === "like")
-    .map(movieByTitle)
-    .filter(Boolean);
-}
-
-function renderTop10List() {
-  el.top10List.innerHTML = top10()
-    .map(
-      (movie, index) => `
-      <li>
-        <span class="rank-no">${index + 1}</span>
-        <span class="rank-title">${movie.title}</span>
-      </li>
-    `
-    )
-    .join("");
-}
-
-function renderHomeRows() {
-  const continueMap = getContinueWatching();
-  const continueItems = Object.keys(continueMap)
-    .map(movieByTitle)
-    .filter(Boolean);
-  const recentItems = getRecentlyViewed().map(movieByTitle).filter(Boolean);
-  const html = [
-    rowTemplate("MCU Universe", byTag("MCU Universe").slice(0, 15)),
-    rowTemplate("Bollywood Hits", byTag("Bollywood Hits").slice(0, 15)),
-    rowTemplate("Hollywood Classics", byTag("Hollywood Classics").slice(0, 15)),
-    rowTemplate("Action & Hype", byTag("Action & Hype").slice(0, 15)),
-    rowTemplate("Mind-blowing Movies", byTag("Mind-blowing Movies").slice(0, 15)),
-    rowTemplate("Continue Watching", continueItems, { showProgress: true }),
-    rowTemplate("Recently Viewed", recentItems)
-  ].join("");
-  el.homeRows.innerHTML = html;
-}
-
-function renderCategoryViews() {
-  el.marvelGrid.innerHTML = byCategory("Marvel").map((movie) => cardTemplate(movie)).join("");
-  el.bollywoodGrid.innerHTML = byCategory("Bollywood").map((movie) => cardTemplate(movie)).join("");
-  el.hollywoodGrid.innerHTML = byCategory("Hollywood").map((movie) => cardTemplate(movie)).join("");
-}
-
-function renderMyList() {
-  const watchlist = getWatchlist().map(movieByTitle).filter(Boolean);
-  el.myListGrid.innerHTML = watchlist.length
-    ? watchlist.map((movie) => cardTemplate(movie)).join("")
-    : `<p class="empty-text">Your watchlist is empty</p>`;
-}
-
-function renderSmartPanels() {
-  const picks = getSmartPicks();
-  const topLiked = getTopLiked();
-  el.smartPicksGrid.innerHTML = picks.length
-    ? picks.map((movie) => cardTemplate(movie)).join("")
-    : `<p class="empty-text">Like a movie to unlock smart picks</p>`;
-  el.topLikedGrid.innerHTML = topLiked.length
-    ? topLiked.map((movie) => cardTemplate(movie)).join("")
-    : `<p class="empty-text">No liked movies yet</p>`;
-}
-
-function renderMood(mood) {
-  const matched = moodMatches(mood);
-  el.moodResultsGrid.innerHTML = matched.length
-    ? matched.map((movie) => cardTemplate(movie)).join("")
-    : `<p class="empty-text">No mood matches found</p>`;
-}
-
-function renderAll() {
-  renderTop10List();
-  renderHomeRows();
-  renderCategoryViews();
-  renderMyList();
-  renderSmartPanels();
-  if (!el.moodResultsGrid.innerHTML.trim()) {
-    renderMood("Action");
-  }
-}
-
-function setupHero() {
-  const spider =
-    movieByTitle("Spider-Man: Far From Home") || movieByTitle("Spider-Man: Homecoming") || movies[0];
-  state.heroMovie = spider;
-  el.heroBackdrop.style.backgroundImage = `url(${spider.poster})`;
-  el.heroTitle.textContent = spider.title;
-  el.heroMeta.textContent = formatRating(spider.rating);
-  el.heroOverview.textContent = spider.description;
-  el.heroTrailerWrap.innerHTML = `
-    <iframe
-      title="Hero trailer"
-      src="${spider.trailer}?autoplay=1&mute=1&controls=0&loop=1"
-      allow="autoplay; encrypted-media; picture-in-picture"
-    ></iframe>
-  `;
-  el.heroTrailerWrap.classList.add("show");
-}
-
-async function openTrailer(movieTitle) {
-  const movie = movieByTitle(movieTitle);
-  if (!movie) {
-    return;
-  }
-  el.trailerFrame.src = `${movie.trailer}?autoplay=1`;
-  openModal(el.trailerModal);
-  incrementContinue(movie.title, 8);
-}
-
-function openMovieModal(movieTitle) {
-  const movie = movieByTitle(movieTitle);
-  if (!movie) {
-    return;
-  }
-  pushRecent(movie.title);
-  incrementContinue(movie.title, 4);
-  const inList = getWatchlist().includes(movie.title);
-  const selected = Number(getRatings()[movie.title] || 0);
-  el.movieModalBody.innerHTML = `
-    <div class="details-hero" style="background-image:url(${movie.poster})"></div>
-    <div class="details-content">
-      <img class="details-poster" src="${movie.poster}" alt="${movie.title}" />
-      <div>
-        <h2>${movie.title}</h2>
-        <p class="details-meta">${formatRating(movie.rating)} • ${movie.category}</p>
-        <p class="details-overview">${movie.description}</p>
-        <div class="details-actions">
-          <button class="primary-btn" data-action="play" data-title="${movie.title}">▶ Play</button>
-          <button class="ghost-btn" data-action="watchlist" data-title="${movie.title}">
-            ${inList ? "− Remove from Watchlist" : "✚ Add to Watchlist"}
-          </button>
-        </div>
-        <div class="rating-inline">
-          ${[1, 2, 3, 4, 5]
-            .map(
-              (star) =>
-                `<button class="rate-btn ${selected >= star ? "active" : ""}" data-rate-title="${movie.title}" data-rate="${star}">★</button>`
-            )
-            .join("")}
-        </div>
-        <div class="details-trailer">
-          <iframe
-            title="${movie.title} trailer"
-            src="${movie.trailer}"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen
-          ></iframe>
-        </div>
-      </div>
-    </div>
-  `;
-  openModal(el.movieModal);
-  renderAll();
-}
-
-function toggleWatchlist(movieTitle) {
-  if (
-    !ensureAuth(() => {
-      toggleWatchlist(movieTitle);
-    })
-  ) {
-    return;
-  }
-  const watchlist = getWatchlist();
-  const inList = watchlist.includes(movieTitle);
-  const next = inList ? watchlist.filter((title) => title !== movieTitle) : [...watchlist, movieTitle];
-  setWatchlist(next);
-  toast(inList ? "Removed from Watchlist" : "Added to Watchlist");
-  renderAll();
-}
-
-function setLike(movieTitle, value) {
-  if (
-    !ensureAuth(() => {
-      setLike(movieTitle, value);
-    })
-  ) {
-    return;
-  }
-  const likes = getLikes();
-  likes[movieTitle] = value;
-  setLikes(likes);
-  toast(value === "like" ? "Liked movie" : "Disliked movie");
-  renderSmartPanels();
-}
-
-function setRating(movieTitle, rating) {
-  if (
-    !ensureAuth(() => {
-      setRating(movieTitle, rating);
-    })
-  ) {
-    return;
-  }
-  const ratings = getRatings();
-  ratings[movieTitle] = rating;
-  setRatings(ratings);
-  toast("Rating saved");
-  openMovieModal(movieTitle);
-}
-
 function switchAuthMode(mode) {
-  state.authMode = mode;
+  authMode = mode;
   const signup = mode === "signup";
-  el.authTitle.textContent = signup ? "Signup" : "Login";
+  el.authTitle.textContent = signup ? "Create Account" : "Login";
   el.nameFieldWrap.classList.toggle("hidden", !signup);
   el.confirmFieldWrap.classList.toggle("hidden", !signup);
   el.authSubmitBtn.textContent = signup ? "Signup" : "Login";
   el.authSwitchBtn.textContent = signup ? "Already have an account? Login" : "Create account";
 }
 
-function handleAuth(event) {
+function handleAuthSubmit(event) {
   event.preventDefault();
   const users = getUsers();
   const email = el.authEmail.value.trim().toLowerCase();
@@ -1150,13 +1033,13 @@ function handleAuth(event) {
     return;
   }
 
-  if (state.authMode === "signup") {
+  if (authMode === "signup") {
     if (!name) {
-      toast("Username required");
+      toast("Username is required");
       return;
     }
     if (password.length < 6) {
-      toast("Password should be at least 6 chars");
+      toast("Password must be at least 6 characters");
       return;
     }
     if (password !== confirm) {
@@ -1164,202 +1047,136 @@ function handleAuth(event) {
       return;
     }
     if (users.some((user) => user.email === email)) {
-      toast("Email already registered");
+      toast("Email already exists");
       return;
     }
-    const user = { id: crypto.randomUUID(), name, email, password };
-    users.push(user);
+    const newUser = { id: crypto.randomUUID(), name, email, password };
+    users.push(newUser);
     setUsers(users);
-    setCurrentUser(user);
+    setCurrentUser(newUser);
     toast("Signup successful");
   } else {
-    const user = users.find((item) => item.email === email && item.password === password);
-    if (!user) {
+    const found = users.find((user) => user.email === email && user.password === password);
+    if (!found) {
       toast("Invalid credentials");
       return;
     }
-    setCurrentUser(user);
+    setCurrentUser(found);
     toast("Login successful");
   }
 
   el.authForm.reset();
   closeModal(el.authModal);
   renderProfileMenu();
-  renderAll();
-  performPendingAction();
+  renderMyList();
+  renderSmartPicks();
+  renderTopPicks();
+  runPendingAction();
 }
 
-function searchMovies(term) {
-  const normalized = term.trim().toLowerCase();
-  if (!normalized) {
-    return [];
-  }
-  return movies.filter((movie) => movie.title.toLowerCase().includes(normalized)).slice(0, 8);
-}
-
-function handleSearchInput() {
-  const query = el.searchInput.value;
-  const results = searchMovies(query);
-  if (!query.trim()) {
-    el.searchSuggestions.classList.remove("open");
-    el.searchSuggestions.innerHTML = "";
-    return;
-  }
-  if (!results.length) {
-    el.searchSuggestions.innerHTML = `<p class="suggestion-empty">No results</p>`;
-    el.searchSuggestions.classList.add("open");
-    return;
-  }
-  el.searchSuggestions.innerHTML = results
-    .map(
-      (movie) => `
-      <button class="suggestion-item" data-suggest-title="${movie.title}">
-        <img src="${movie.poster}" alt="${movie.title}" />
-        <div>
-          <strong>${movie.title}</strong>
-          <small>${formatRating(movie.rating)}</small>
-        </div>
-      </button>
-    `
-    )
-    .join("");
-  el.searchSuggestions.classList.add("open");
-}
-
-function queueSearch() {
-  clearTimeout(state.searchTimer);
-  state.searchTimer = setTimeout(handleSearchInput, 220);
-}
-
-function startHoverPreview(card) {
-  const title = card.dataset.title;
-  if (!title) {
-    return;
-  }
-  clearTimeout(state.hoverTimers[title]);
-  state.hoverTimers[title] = setTimeout(() => {
-    const target = card.querySelector(`[data-preview="${title}"]`);
-    const movie = movieByTitle(title);
-    if (!target || !movie) {
-      return;
+function revealOnScroll() {
+  document.querySelectorAll(".reveal").forEach((node) => {
+    const rect = node.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.9) {
+      node.classList.add("visible");
     }
-    target.innerHTML = `
-      <iframe
-        title="${movie.title} preview"
-        src="${movie.trailer}?autoplay=1&mute=1&controls=0"
-        allow="autoplay; encrypted-media"
-      ></iframe>
-    `;
-    target.classList.add("show");
-  }, 1000);
+  });
 }
 
-function stopHoverPreview(card) {
-  const title = card.dataset.title;
-  clearTimeout(state.hoverTimers[title]);
-  const target = card.querySelector(`[data-preview="${title}"]`);
-  if (target) {
-    target.classList.remove("show");
-    target.innerHTML = "";
-  }
+async function loadNews() {
+  renderNewsSkeletons();
+  await fetchNews();
+  filterNews(state.newsFilter);
 }
 
-function onGlobalClick(event) {
-  const tab = event.target.closest(".nav-tab");
-  if (tab) {
-    activateView(tab.dataset.view);
-    el.navTabs.classList.remove("open");
-  }
-
-  const closeBtn = event.target.closest("[data-close-modal]");
-  if (closeBtn) {
-    closeModal(document.getElementById(closeBtn.dataset.closeModal));
-  }
-  if (event.target.classList.contains("modal")) {
-    closeModal(event.target);
-  }
-
-  const profileAction = event.target.closest("[data-profile-action]");
-  if (profileAction) {
-    const action = profileAction.dataset.profileAction;
-    if (action === "login" || action === "signup") {
-      switchAuthMode(action === "signup" ? "signup" : "login");
-      openModal(el.authModal);
-    } else if (action === "logout") {
-      setCurrentUser(null);
-      toast("Logged out");
-      renderProfileMenu();
-      renderAll();
-    } else if (action === "profile") {
-      toast("Profile settings coming soon");
-    }
-    el.profileMenu.classList.remove("open");
-  }
-
-  const actionBtn = event.target.closest("[data-action]");
-  if (actionBtn) {
-    const title = actionBtn.dataset.title;
-    const action = actionBtn.dataset.action;
-    if (action === "play") {
-      if (
-        !ensureAuth(() => {
-          openTrailer(title);
-        })
-      ) {
-        return;
-      }
-      openTrailer(title);
-    } else if (action === "watchlist") {
-      toggleWatchlist(title);
-    } else if (action === "like") {
-      setLike(title, "like");
-    } else if (action === "dislike") {
-      setLike(title, "dislike");
-    } else if (action === "rate") {
-      openMovieModal(title);
-    }
-  }
-
-  const rateBtn = event.target.closest("[data-rate-title]");
-  if (rateBtn) {
-    setRating(rateBtn.dataset.rateTitle, Number(rateBtn.dataset.rate));
-  }
-
-  const suggest = event.target.closest("[data-suggest-title]");
-  if (suggest) {
-    openMovieModal(suggest.dataset.suggestTitle);
-    el.searchInput.value = "";
-    el.searchSuggestions.classList.remove("open");
-  }
-
-  const card = event.target.closest(".movie-card");
-  if (card && !event.target.closest(".hover-actions")) {
-    openMovieModal(card.dataset.title);
-  }
-
-  const moodBtn = event.target.closest("[data-mood]");
-  if (moodBtn) {
-    el.moodButtons.forEach((button) => button.classList.remove("active"));
-    moodBtn.classList.add("active");
-    renderMood(moodBtn.dataset.mood);
-  }
-
-  if (!event.target.closest(".profile-wrap")) {
-    el.profileMenu.classList.remove("open");
-  }
-  if (!event.target.closest(".search-wrap")) {
-    el.searchSuggestions.classList.remove("open");
-  }
+async function loadSports(tab) {
+  state.sportsTab = tab;
+  renderSportsSkeletons();
+  await fetchSports(SPORTS_QUERIES[tab] || SPORTS_QUERIES.cricket);
+  renderSports();
 }
 
 function bindEvents() {
-  document.addEventListener("click", onGlobalClick);
+  el.categoryCards.forEach((card) => {
+    card.addEventListener("click", () => {
+      const section = card.dataset.category;
+      applySection(section);
+      if (section === "news" && !state.news.length) {
+        loadNews().catch(() => toast("News fetch failed"));
+      }
+      if (section === "sports" && !state.sportsVideos.length) {
+        loadSports("cricket").catch(() => toast("Sports fetch failed"));
+      }
+    });
+  });
+
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-close-modal]")) {
+      const id = event.target.closest("[data-close-modal]").dataset.closeModal;
+      closeModal(document.getElementById(id));
+    }
+    if (event.target.classList.contains("modal")) {
+      closeModal(event.target);
+    }
+
+    const actionBtn = event.target.closest("[data-action]");
+    if (actionBtn) {
+      const action = actionBtn.dataset.action;
+      const title = actionBtn.dataset.title;
+      const videoId = actionBtn.dataset.videoId;
+      if (action === "play-movie") {
+        if (!ensureAuth(() => openTrailer(title))) {
+          return;
+        }
+        openTrailer(title);
+      } else if (action === "watchlist") {
+        toggleWatchlist(title);
+      } else if (action === "like") {
+        likeMovie(title);
+      } else if (action === "rate") {
+        openMovieModal(title);
+      } else if (action === "open-movie") {
+        openMovieModal(title);
+      } else if (action === "play-sport") {
+        el.videoFrame.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+        openModal(el.videoModal);
+      }
+    }
+
+    const rateBtn = event.target.closest("[data-rate]");
+    if (rateBtn) {
+      rateMovie(rateBtn.dataset.title, Number(rateBtn.dataset.rate));
+    }
+
+    const profileAction = event.target.closest("[data-profile-action]");
+    if (profileAction) {
+      const action = profileAction.dataset.profileAction;
+      if (action === "login" || action === "signup") {
+        switchAuthMode(action);
+        openModal(el.authModal);
+      } else if (action === "logout") {
+        setCurrentUser(null);
+        renderProfileMenu();
+        renderMyList();
+        toast("Logged out");
+      } else {
+        toast("Profile settings coming soon");
+      }
+      el.profileMenu.classList.remove("open");
+    }
+
+    if (!event.target.closest(".profile-wrap")) {
+      el.profileMenu.classList.remove("open");
+    }
+  });
+
   document.addEventListener("mouseover", (event) => {
     const card = event.target.closest(".movie-card");
     if (card) {
       startHoverPreview(card);
     }
   });
+
   document.addEventListener("mouseout", (event) => {
     const card = event.target.closest(".movie-card");
     if (card && !card.contains(event.relatedTarget)) {
@@ -1367,119 +1184,133 @@ function bindEvents() {
     }
   });
 
-  el.mobileNavBtn.addEventListener("click", () => {
-    el.navTabs.classList.toggle("open");
+  el.homeBtn.addEventListener("click", () => {
+    applySection("home");
+  });
+
+  el.sectionBtn.addEventListener("click", () => {
+    if (state.section !== "home") {
+      applySection(state.section);
+    }
+  });
+
+  el.myListBtn.addEventListener("click", () => {
+    applySection("mylist");
+    renderMyList();
   });
 
   el.profileBtn.addEventListener("click", () => {
     el.profileMenu.classList.toggle("open");
   });
 
-  el.searchInput.addEventListener("input", queueSearch);
-  el.quickPlayBtn.addEventListener("click", () => {
-    const random = movies[Math.floor(Math.random() * movies.length)];
-    if (
-      !ensureAuth(() => {
-        openTrailer(random.title);
-      })
-    ) {
-      return;
-    }
-    openTrailer(random.title);
+  el.themeToggle.addEventListener("click", () => {
+    const next = document.body.dataset.theme === "dark" ? "light" : "dark";
+    document.body.dataset.theme = next;
+    el.themeToggle.textContent = next === "dark" ? "🌙" : "☀️";
+  });
+
+  el.globalSearch.addEventListener("input", (event) => {
+    runSearch(event.target.value);
   });
 
   el.heroTrailerBtn.addEventListener("click", () => {
-    if (!state.heroMovie) {
-      return;
-    }
-    if (
-      !ensureAuth(() => {
-        openTrailer(state.heroMovie.title);
-      })
-    ) {
+    if (!ensureAuth(() => openTrailer(state.heroMovie.title))) {
       return;
     }
     openTrailer(state.heroMovie.title);
   });
 
   el.heroWatchlistBtn.addEventListener("click", () => {
-    if (!state.heroMovie) {
-      return;
-    }
     toggleWatchlist(state.heroMovie.title);
   });
 
-  el.authForm.addEventListener("submit", handleAuth);
+  el.quickPlayBtn.addEventListener("click", quickPlay);
+
+  el.moodButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      el.moodButtons.forEach((node) => node.classList.remove("active"));
+      button.classList.add("active");
+      renderMoodResults(button.dataset.mood);
+    });
+  });
+
+  el.newsFilterButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      el.newsFilterButtons.forEach((node) => node.classList.remove("active"));
+      button.classList.add("active");
+      filterNews(button.dataset.newsFilter);
+    });
+  });
+
+  el.refreshNewsBtn.addEventListener("click", () => {
+    loadNews().catch(() => toast("News refresh failed"));
+  });
+
+  el.sportsFilterButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      el.sportsFilterButtons.forEach((node) => node.classList.remove("active"));
+      button.classList.add("active");
+      loadSports(button.dataset.sportsFilter).catch(() => toast("Sports load failed"));
+    });
+  });
+
+  el.authForm.addEventListener("submit", handleAuthSubmit);
   el.authSwitchBtn.addEventListener("click", () => {
-    switchAuthMode(state.authMode === "login" ? "signup" : "login");
-  });
-
-  el.themeToggle.addEventListener("click", () => {
-    const dark = document.body.dataset.theme !== "dark";
-    document.body.dataset.theme = dark ? "dark" : "light";
-    el.themeToggle.textContent = dark ? "🌙" : "☀️";
-  });
-
-  window.addEventListener("scroll", () => {
-    const y = window.scrollY;
-    el.navbar.classList.toggle("scrolled", y > 10);
-    el.scrollTopBtn.classList.toggle("show", y > 420);
-    if (y > (state.lastScrollY || 0) && y > 170) {
-      el.navbar.classList.add("hidden-up");
-    } else {
-      el.navbar.classList.remove("hidden-up");
-    }
-    state.lastScrollY = y;
-  });
-
-  el.scrollTopBtn.addEventListener("click", () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    switchAuthMode(authMode === "login" ? "signup" : "login");
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "/") {
       event.preventDefault();
-      el.searchInput.focus();
+      el.globalSearch.focus();
     } else if (event.key === "Escape") {
-      closeModal(el.movieModal);
       closeModal(el.trailerModal);
+      closeModal(el.movieModal);
+      closeModal(el.videoModal);
       closeModal(el.authModal);
-      el.searchSuggestions.classList.remove("open");
       el.profileMenu.classList.remove("open");
     }
   });
+
+  window.addEventListener("scroll", () => {
+    const y = window.scrollY;
+    el.navbar.classList.toggle("scrolled", y > 10);
+    el.scrollTopBtn.classList.toggle("show", y > 400);
+    if (y > state.lastScrollY && y > 200) {
+      el.navbar.classList.add("hidden-up");
+    } else {
+      el.navbar.classList.remove("hidden-up");
+    }
+    state.lastScrollY = y;
+    revealOnScroll();
+  });
+
+  el.scrollTopBtn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
 }
 
-function renderSkeletons() {
-  const skeletonRow = `
-    <div class="skeleton-row">
-      ${Array.from({ length: 8 })
-        .map(() => `<div class="skeleton-card"></div>`)
-        .join("")}
-    </div>
-  `;
-  el.homeRows.innerHTML = skeletonRow + skeletonRow;
-  el.marvelGrid.innerHTML = Array.from({ length: 8 })
-    .map(() => `<div class="skeleton-card"></div>`)
-    .join("");
-  el.bollywoodGrid.innerHTML = el.marvelGrid.innerHTML;
-  el.hollywoodGrid.innerHTML = el.marvelGrid.innerHTML;
-  el.myListGrid.innerHTML = el.marvelGrid.innerHTML;
-  el.smartPicksGrid.innerHTML = el.marvelGrid.innerHTML;
-  el.topLikedGrid.innerHTML = el.marvelGrid.innerHTML;
-  el.moodResultsGrid.innerHTML = el.marvelGrid.innerHTML;
+function initMovies() {
+  renderMovieSkeletons();
+  setTimeout(() => {
+    updateHero(state.heroMovie);
+    renderTop10();
+    renderMovieRows();
+    renderMoodResults(state.mood);
+    renderSmartPicks();
+    renderTopPicks();
+    renderContinueWatching();
+    renderMyList();
+    revealOnScroll();
+  }, 350);
 }
 
 function init() {
-  el.yearText.textContent = String(new Date().getFullYear());
   renderProfileMenu();
+  switchAuthMode("login");
+  initMovies();
   bindEvents();
-  renderSkeletons();
-  setTimeout(() => {
-    setupHero();
-    renderAll();
-    el.moodButtons[0]?.classList.add("active");
-  }, 450);
+  applySection("home");
 }
 
 init();
