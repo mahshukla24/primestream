@@ -18,50 +18,38 @@
 
       <nav id="navTabs" class="nav-tabs">
         <button class="nav-tab active" data-view="home">Home</button>
-        <button class="nav-tab" data-view="movies">Movies</button>
-        <button class="nav-tab" data-view="trending">Trending</button>
-        <button class="nav-tab" data-view="india">Popular in India</button>
+        <button class="nav-tab" data-view="marvel">Marvel Universe</button>
+        <button class="nav-tab" data-view="bollywood">Bollywood</button>
+        <button class="nav-tab" data-view="hollywood">Hollywood</button>
         <button class="nav-tab" data-view="mylist">My List</button>
       </nav>
 
       <div class="nav-actions">
-        <div class="search-wrap">
-          <input
-            id="searchInput"
-            type="search"
-            autocomplete="off"
-            placeholder="Search movies..."
-            aria-label="Search movies"
-          />
-          <div id="searchSuggestions" class="search-suggestions"></div>
-        </div>
-        <select id="languageToggle" class="compact-select" aria-label="Language">
-          <option value="en">EN</option>
-          <option value="hi">HI</option>
-          <option value="es">ES</option>
-        </select>
+        <button id="quickPlayBtn" class="pill-btn">🎬 Quick Play</button>
         <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">🌙</button>
         <div class="profile-wrap">
           <button id="profileBtn" class="profile-btn" aria-label="Profile menu">
-            <span class="avatar">👤</span>
+            <span>👤</span>
             <span id="profileName">Guest</span>
           </button>
           <div id="profileMenu" class="profile-menu"></div>
         </div>
-        <button id="mobileNavBtn" class="icon-btn mobile-nav-btn" aria-label="Open menu">☰</button>
+        <button id="mobileNavBtn" class="icon-btn mobile-nav-btn" aria-label="Menu">☰</button>
       </div>
     </header>
 
-    <main id="appRoot">
+    <main>
       <section id="view-home" class="view active">
-        <section id="heroSection" class="hero">
+        <section class="hero">
           <div id="heroBackdrop" class="hero-backdrop"></div>
           <div class="hero-overlay"></div>
           <div class="hero-content">
-            <span class="top-badge">Top 10 Today</span>
-            <h1 id="heroTitle">Spider-Man</h1>
-            <p id="heroMeta">⭐ 0.0/10</p>
-            <p id="heroOverview">Loading Spider-Man showcase...</p>
+            <span class="hero-badge">Top 10 Today</span>
+            <h1 id="heroTitle">Spider-Man: Homecoming</h1>
+            <p id="heroMeta">⭐ 7.4/10 • Marvel</p>
+            <p id="heroDescription">
+              Peter Parker balances high school life with superhero duties while facing the Vulture.
+            </p>
             <div class="hero-actions">
               <button id="heroTrailerBtn" class="primary-btn">▶ Watch Trailer</button>
               <button id="heroWatchlistBtn" class="ghost-btn">✚ Add to Watchlist</button>
@@ -71,35 +59,38 @@
         </section>
 
         <section class="panel">
+          <h3>Mood Picker</h3>
+          <div id="moodPicker" class="mood-picker">
+            <button class="mood-btn active" data-mood="all">All</button>
+            <button class="mood-btn" data-mood="action">Action</button>
+            <button class="mood-btn" data-mood="emotional">Emotional</button>
+            <button class="mood-btn" data-mood="mind">Mind-blowing</button>
+          </div>
+        </section>
+
+        <section class="panel">
           <div id="homeRows" class="rows-container"></div>
         </section>
       </section>
 
-      <section id="view-movies" class="view">
-        <section class="movies-toolbar">
-          <div id="genreChips" class="genre-chips"></div>
-          <div class="sort-block">
-            <label for="sortBy">Sort</label>
-            <select id="sortBy" class="compact-select">
-              <option value="popularity">Popularity</option>
-              <option value="rating">Rating</option>
-            </select>
-          </div>
-        </section>
-        <section id="moviesGrid" class="movie-grid"></section>
-      </section>
-
-      <section id="view-trending" class="view">
+      <section id="view-marvel" class="view">
         <section class="panel">
-          <h2>Trending This Week</h2>
-          <div id="trendingGrid" class="movie-grid"></div>
+          <h2>MCU Universe</h2>
+          <div id="marvelGrid" class="movie-grid"></div>
         </section>
       </section>
 
-      <section id="view-india" class="view">
+      <section id="view-bollywood" class="view">
         <section class="panel">
-          <h2>Popular in India</h2>
-          <div id="indiaGrid" class="movie-grid"></div>
+          <h2>Bollywood Hits</h2>
+          <div id="bollywoodGrid" class="movie-grid"></div>
+        </section>
+      </section>
+
+      <section id="view-hollywood" class="view">
+        <section class="panel">
+          <h2>Hollywood Classics</h2>
+          <div id="hollywoodGrid" class="movie-grid"></div>
         </section>
       </section>
 
