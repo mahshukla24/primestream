@@ -19,10 +19,9 @@ const SPORTS_PLACEHOLDER = "https://via.placeholder.com/900x520/11192d/ffffff?te
 const ADULT_KEYWORDS_RE =
   /\b(nude|nudity|porn|xxx|sex|erotic|hot scene|18\+|adult movie|uncut)\b/i;
 const NON_ALLOWED_LANG_KEYWORDS_RE =
-  /\b(tamil|telugu|malayalam|kannada|marathi|bengali|punjabi|gujarati|spanish|espanol|portuguese|bahasa|indonesian|turkish|thai|korean|japanese|russian)\b/i;
+  /\b(tamil|telugu|malayalam|kannada|marathi|bengali|punjabi|gujarati|spanish|espanol|portuguese|bahasa|indonesian|turkish|thai|korean|japanese|russian|urdu)\b/i;
 const NON_ALLOWED_SCRIPT_RE =
-  /[\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F\u0980-\u09FF\u0600-\u06FF\u3040-\u30FF\u4E00-\u9FFF]/;
-const HINDI_SCRIPT_RE = /[\u0900-\u097F]/;
+  /[\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F\u0980-\u09FF\u0900-\u097F\u0600-\u06FF\u3040-\u30FF\u4E00-\u9FFF]/;
 const ENGLISH_TRAILER_SIGNAL_RE = /\b(official|trailer|movie|film|teaser|english|hindi|hd)\b/i;
 const HINDI_TRAILER_SIGNAL_RE = /ट्रेलर|हिंदी|हिन्दी/i;
 const SPORTS_KEYWORD_RE =
@@ -219,16 +218,6 @@ const MOVIES = [
     description: "A hacker uncovers a shocking reality and joins a rebellion for freedom."
   },
   {
-    title: "The Shawshank Redemption",
-    poster: "https://image.tmdb.org/t/p/original/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
-    trailer: "https://www.youtube.com/embed/PLl99DlL6b4",
-    rating: 9.3,
-    category: "Hollywood",
-    moods: ["Mind-blowing"],
-    tags: ["Top10"],
-    description: "A timeless story of hope and resilience inside a prison system."
-  },
-  {
     title: "Forrest Gump",
     poster: "https://image.tmdb.org/t/p/original/saHP97rTPS5eLmrLQEcANmKrsFl.jpg",
     trailer: "https://www.youtube.com/embed/bLvqoHBptjg",
@@ -378,8 +367,7 @@ const STORAGE = {
   fallbackRecent: "primeStream.guest.recent",
   fallbackContinue: "primeStream.guest.continue",
   movieAssets: "primeStream.movieAssets",
-  discoverCache: "primeStream.discoverCache",
-  offlinePack: "primeStream.offlinePack"
+  discoverCache: "primeStream.discoverCache"
 };
 
 const state = {
@@ -436,8 +424,6 @@ const el = {
   landingSportsCount: document.getElementById("landingSportsCount"),
   landingNewsBadge: document.getElementById("landingNewsBadge"),
   landingSportsBadge: document.getElementById("landingSportsBadge"),
-  offlinePackBtn: document.getElementById("offlinePackBtn"),
-  offlineReadyBadge: document.getElementById("offlineReadyBadge"),
 
   moviesView: document.getElementById("moviesView"),
   movieHeroBackdrop: document.getElementById("movieHeroBackdrop"),
@@ -519,14 +505,6 @@ function getJSON(key, fallback) {
 
 function setJSON(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
-}
-
-function getOfflinePack() {
-  return getJSON(STORAGE.offlinePack, null);
-}
-
-function setOfflinePack(pack) {
-  setJSON(STORAGE.offlinePack, pack);
 }
 
 function toCacheKey(key) {
@@ -797,23 +775,6 @@ function updateLandingStats() {
   if (el.landingSportsCount) {
     el.landingSportsCount.textContent = `${state.sportsVideos.length || 0}+`;
   }
-  updateOfflinePackBadge();
-}
-
-function updateOfflinePackBadge() {
-  if (!el.offlineReadyBadge) {
-    return;
-  }
-  const pack = getOfflinePack();
-  if (!pack?.preparedAt) {
-    updateStatusBadge(el.offlineReadyBadge, "Offline pack not ready", "neutral");
-    return;
-  }
-  if (!navigator.onLine) {
-    updateStatusBadge(el.offlineReadyBadge, "Offline mode ready", "success");
-    return;
-  }
-  updateStatusBadge(el.offlineReadyBadge, "Offline pack ready", "success");
 }
 
 function cycleNewsUrls(filter, includeGlobalFallback = false) {
@@ -885,7 +846,9 @@ function videoIdFromEmbed(embedUrl) {
 }
 
 function movieCatalog() {
-  return [...MOVIES, ...Object.values(state.dynamicMovies)];
+  return uniqueBy([...MOVIES, ...Object.values(state.dynamicMovies)], (movie) =>
+    normText(movie.title || "")
+  );
 }
 
 function movieByTitle(title) {
@@ -955,13 +918,19 @@ function candidateTrailerScore(item) {
   if (text.includes("trailer")) score += 35;
   if (text.includes("english trailer") || text.includes("hindi trailer")) score += 25;
   if (text.includes("final trailer")) score += 15;
-  if (text.includes("4k") || text.includes("hd")) score += 10;
+  if (text.includes("4k") || text.includes("hd")) score += 16;
   if (text.includes("teaser")) score -= 35;
   if (text.includes("promo") || text.includes("clip")) score -= 25;
   if (text.includes("fan made") || text.includes("reaction")) score -= 60;
   if (NON_ALLOWED_LANG_KEYWORDS_RE.test(text)) score -= 90;
-  if (NON_ALLOWED_SCRIPT_RE.test(text) && !HINDI_SCRIPT_RE.test(text)) score -= 100;
-  if (text.includes("sony pictures") || text.includes("marvel") || text.includes("warner bros")) score += 20;
+  if (NON_ALLOWED_SCRIPT_RE.test(text)) score -= 100;
+  if (
+    text.includes("sony pictures") ||
+    text.includes("marvel") ||
+    text.includes("warner bros") ||
+    text.includes("official")
+  )
+    score += 20;
   if ((item.snippet?.title || "").split(" ").length < 2) score -= 10;
   return score;
 }
@@ -977,7 +946,7 @@ function isAllowedTrailerCandidate(item) {
     return false;
   }
   const lower = text.toLowerCase();
-  if (NON_ALLOWED_SCRIPT_RE.test(text) && !HINDI_SCRIPT_RE.test(text)) {
+  if (NON_ALLOWED_SCRIPT_RE.test(text)) {
     return false;
   }
   if (NON_ALLOWED_LANG_KEYWORDS_RE.test(lower) && !lower.includes("hindi")) {
@@ -1230,31 +1199,52 @@ function reviewSeedForMovie(movie) {
   return hash;
 }
 
-function generatedCommunityReviews(movie) {
-  const seed = reviewSeedForMovie(movie);
-  const profiles = [
-    "Aarav", "Sophia", "Noah", "Isha", "Liam", "Vihaan", "Emma", "Kabir", "Olivia", "Riya"
-  ];
-  const snippets = [
-    "Amazing pacing and visuals, worth watching on a big screen.",
-    "Solid performances and high replay value.",
-    "Trailer looked great and the movie delivered.",
-    "Strong cinematography with a memorable score.",
-    "Great for weekend binge, very engaging throughout.",
-    "A fan-favorite vibe with standout moments."
-  ];
-  const count = 3 + (seed % 4);
-  const output = [];
-  for (let i = 0; i < count; i += 1) {
-    const profile = profiles[(seed + i * 7) % profiles.length];
-    const text = snippets[(seed + i * 11) % snippets.length];
-    const rating = 7 + ((seed + i * 13) % 30) / 10;
-    output.push({ user: profile, text, rating: Number(Math.min(10, rating).toFixed(1)) });
+async function fetchMovieReviewsFromTmdb(movie) {
+  try {
+    const url = `${TMDB_BASE}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(
+      movie.title
+    )}&include_adult=false`;
+    const data = await fetchJSONWithFallback(url, { cacheKey: `tmdb.review.search.${movie.title}` });
+    const results = data.results || [];
+    const titleNorm = normText(movie.title);
+    const best = results
+      .map((item) => {
+        const exact = normText(item.title || "") === titleNorm ? 50 : 0;
+        const pop = Math.min((item.popularity || 0) / 5, 20);
+        const votes = Math.min((item.vote_count || 0) / 120, 20);
+        return { item, score: exact + pop + votes };
+      })
+      .sort((a, b) => b.score - a.score)[0]?.item;
+    if (!best?.id) {
+      return [];
+    }
+    const reviewsUrl = `${TMDB_BASE}/movie/${best.id}/reviews?api_key=${TMDB_API_KEY}&language=en-US&page=1`;
+    const reviewsData = await fetchJSONWithFallback(reviewsUrl, { cacheKey: `tmdb.review.list.${best.id}` });
+    const list = (reviewsData.results || []).slice(0, 4).map((item) => ({
+      user: item.author || "Viewer",
+      text: String(item.content || "").slice(0, 260),
+      rating: Number(item.author_details?.rating || best.vote_average || movie.rating || 7),
+      isReal: true
+    }));
+    return list.filter((item) => item.text.trim().length >= 18);
+  } catch (_error) {
+    return [];
   }
-  return output;
 }
 
-function renderCommunityReviews() {
+function generatedFallbackReview(movie) {
+  const profile = ["Alex", "Sam", "Jordan", "Taylor", "Casey"][reviewSeedForMovie(movie) % 5];
+  return [
+    {
+      user: profile,
+      text: `Review data for ${movie.title} is loading from sources. This title has strong audience interest and good replay value.`,
+      rating: Number(Math.max(6.5, Number(movie.rating || 7)).toFixed(1)),
+      isFallback: true
+    }
+  ];
+}
+
+async function renderCommunityReviews() {
   if (!el.reviewsGrid) {
     return;
   }
@@ -1281,10 +1271,11 @@ function renderCommunityReviews() {
     el.reviewsGrid.innerHTML = `<p class="empty-text">No reviews found for "${escapeHtml(state.reviewSearchTerm)}".</p>`;
     return;
   }
-  el.reviewsGrid.innerHTML = pool
-    .map((movie) => {
+  const cards = await Promise.all(
+    pool.map(async (movie) => {
       const token = encodeTitle(movie.title);
-      const generated = generatedCommunityReviews(movie);
+      const real = await fetchMovieReviewsFromTmdb(movie);
+      const generated = real.length ? real : generatedFallbackReview(movie);
       const myReview = myReviews[movie.title];
       const all = myReview
         ? [...generated, { user: "You", text: myReview.text, rating: myReview.rating, isUser: true }]
@@ -1329,7 +1320,8 @@ function renderCommunityReviews() {
         </article>
       `;
     })
-    .join("");
+  );
+  el.reviewsGrid.innerHTML = cards.join("");
   revealOnScroll();
 }
 
@@ -1343,11 +1335,11 @@ function renderMovieRows() {
   const mind = allMovies.filter((movie) => movie.tags?.includes("Mind"));
 
   el.mcuGrid.innerHTML = marvel.map((movie) => movieCardTemplate(movie)).join("");
-  el.bollyGrid.innerHTML = bolly.map((movie) => movieCardTemplate(movie)).join("");
-  el.hollyGrid.innerHTML = holly.map((movie) => movieCardTemplate(movie)).join("");
   if (el.fantasyGrid) {
     el.fantasyGrid.innerHTML = fantasy.map((movie) => movieCardTemplate(movie)).join("");
   }
+  el.bollyGrid.innerHTML = bolly.map((movie) => movieCardTemplate(movie)).join("");
+  el.hollyGrid.innerHTML = holly.map((movie) => movieCardTemplate(movie)).join("");
   el.actionGrid.innerHTML = action.map((movie) => movieCardTemplate(movie)).join("");
   el.mindGrid.innerHTML = mind.map((movie) => movieCardTemplate(movie)).join("");
 }
@@ -1821,12 +1813,19 @@ function renderNewsSkeletons() {
 const NON_ENGLISH_VIDEO_RE =
   /தமிழ்|తెలుగు|ಕನ್ನಡ|മലയാളം|বাংলা|اردو|हाइलाइट्स|हाइलाइट/i;
 const SPORTS_SPAM_RE = /prediction|dream11|fantasy|live stream|match live now|betting/i;
+const HINDI_TRAIL_RE = /[\u0900-\u097F]|हिंदी|हाइलाइट|हाइलाइट्स|हिन्दी|भारत|इंग्लैंड|विश्व कप|मैच/i;
+const SPORTS_TITLE_BLOCKLIST_RE =
+  /\b(hindi|tamil|telugu|malayalam|kannada|marathi|bengali|urdu|বাংলা|தமிழ்|తెలుగు|ಕನ್ನಡ)\b/i;
 
 function isEnglishSportsItem(item) {
   const title = item.snippet?.title || "";
   const description = item.snippet?.description || "";
   const text = `${title} ${description}`;
+  const lowerTitle = title.toLowerCase();
   if (!item.id?.videoId) {
+    return false;
+  }
+  if (SPORTS_TITLE_BLOCKLIST_RE.test(lowerTitle) || HINDI_TRAIL_RE.test(title)) {
     return false;
   }
   if (NON_ENGLISH_VIDEO_RE.test(text) || SPORTS_SPAM_RE.test(text.toLowerCase())) {
@@ -1850,10 +1849,24 @@ function isStrictSportsItem(item) {
   if (NON_ALLOWED_LANG_KEYWORDS_RE.test(lower)) {
     return false;
   }
-  if (NON_ALLOWED_SCRIPT_RE.test(text) && !HINDI_SCRIPT_RE.test(text)) {
+  if (NON_ALLOWED_SCRIPT_RE.test(text)) {
+    return false;
+  }
+  if (HINDI_TRAIL_RE.test(text) || SPORTS_TITLE_BLOCKLIST_RE.test(lower)) {
     return false;
   }
   return true;
+}
+
+function cleanSportsTitle(text) {
+  return String(text || "")
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/Ind\s+vs\s+Eng/gi, "India vs England")
+    .replace(/\s+\|\s+.*$/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 function scoreSportsImportance(item) {
@@ -1914,13 +1927,14 @@ function sportsCardTemplate(item) {
     item.snippet?.thumbnails?.medium?.url ||
     SPORTS_PLACEHOLDER;
   const videoId = item.id.videoId;
+  const cleanTitle = cleanSportsTitle(item.snippet?.title || "Sports video");
   return `
     <article class="sports-card reveal">
       <img loading="lazy" src="${thumb}" alt="${escapeHtml(
-    item.snippet?.title || "Sports video"
+    cleanTitle
   )}" onerror="this.src='${SPORTS_PLACEHOLDER}'" />
       <div class="sports-card-content">
-        <h3>${escapeHtml(item.snippet?.title || "Sports video")}</h3>
+        <h3>${escapeHtml(cleanTitle)}</h3>
         <button class="read-btn" data-action="play-sport" data-video-id="${videoId}">▶ Play</button>
       </div>
     </article>
@@ -2281,24 +2295,6 @@ async function loadNews() {
   const requestToken = state.newsLoadToken;
   renderNewsSkeletons();
   const filter = state.newsFilter || "all";
-  if (!navigator.onLine) {
-    const pack = getOfflinePack();
-    const offlineNews = pack?.newsByFilter?.[filter] || pack?.newsByFilter?.all || [];
-    if (offlineNews.length) {
-      state.news = offlineNews;
-      state.newsCache[filter] = offlineNews;
-      renderNews(state.news);
-      updateStatusBadge(el.newsStatusBadge, "Offline Pack", "warn");
-      updateStatusBadge(el.landingNewsBadge, "Offline", "warn");
-      updateLandingStats();
-      return;
-    }
-    state.news = [];
-    renderNews(state.news);
-    updateStatusBadge(el.newsStatusBadge, "Offline No Pack", "error");
-    updateStatusBadge(el.landingNewsBadge, "Offline", "error");
-    return;
-  }
   if (state.newsCache[filter]) {
     if (requestToken !== state.newsLoadToken) {
       return;
@@ -2319,18 +2315,6 @@ async function loadNews() {
 async function loadSports(tab) {
   state.sportsTab = tab;
   renderSportsSkeletons();
-  if (!navigator.onLine) {
-    const pack = getOfflinePack();
-    const offlineSports = pack?.sportsByTab?.[tab] || [];
-    if (offlineSports.length) {
-      state.sportsVideos = offlineSports;
-      renderSports();
-      updateStatusBadge(el.sportsStatusBadge, "Offline Pack", "warn");
-      updateStatusBadge(el.landingSportsBadge, "Offline", "warn");
-      updateLandingStats();
-      return;
-    }
-  }
   if (SPORTS_QUERIES[tab] && state.sportsCache[tab]) {
     state.sportsVideos = state.sportsCache[tab];
     renderSports();
@@ -2347,55 +2331,6 @@ async function loadSports(tab) {
     state.sportsCache[tab] = state.sportsVideos;
   }
   renderSports();
-}
-
-async function prepareOfflinePack() {
-  if (!el.offlinePackBtn) {
-    return;
-  }
-  const button = el.offlinePackBtn;
-  const previousLabel = button.textContent;
-  button.disabled = true;
-  button.textContent = "Preparing...";
-  try {
-    const newsByFilter = {};
-    for (const filter of ["all", "tech", "business", "science"]) {
-      const cached = state.newsCache[filter] || [];
-      if (cached.length) {
-        newsByFilter[filter] = cached.slice(0, 160);
-        continue;
-      }
-      if (navigator.onLine) {
-        const snapshot = await fetchNewsCollection(filter);
-        if (snapshot.length) {
-          newsByFilter[filter] = snapshot.slice(0, 160);
-        }
-      }
-    }
-
-    const sportsByTab = {};
-    for (const tab of ["cricket", "football", "chess", "badminton"]) {
-      const cache = state.sportsCache[tab] || (tab === state.sportsTab ? state.sportsVideos : []);
-      if (cache?.length) {
-        sportsByTab[tab] = cache.slice(0, 180);
-      }
-    }
-
-    setOfflinePack({
-      preparedAt: new Date().toISOString(),
-      newsByFilter,
-      sportsByTab,
-      discoverMovies: state.discoverMovies.slice(0, 220),
-      dynamicMovies: Object.values(state.dynamicMovies).slice(0, 220)
-    });
-    updateOfflinePackBadge();
-    toast("Offline pack ready for safer class demo");
-  } catch (_error) {
-    toast("Offline pack could not be prepared");
-  } finally {
-    button.disabled = false;
-    button.textContent = previousLabel;
-  }
 }
 
 function bindEvents() {
@@ -2701,12 +2636,6 @@ function bindEvents() {
     });
   }
 
-  if (el.offlinePackBtn) {
-    el.offlinePackBtn.addEventListener("click", () => {
-      prepareOfflinePack();
-    });
-  }
-
   document.addEventListener("submit", (event) => {
     const form = event.target.closest(".review-form");
     if (!form) {
@@ -2792,24 +2721,6 @@ function bindEvents() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  window.addEventListener("offline", () => {
-    updateOfflinePackBadge();
-    toast("Offline mode: using saved pack where available");
-  });
-
-  window.addEventListener("online", () => {
-    updateOfflinePackBadge();
-    toast("Back online");
-  });
-}
-
-function registerServiceWorker() {
-  if (!("serviceWorker" in navigator)) {
-    return;
-  }
-  navigator.serviceWorker.register("./sw.js").catch(() => {
-    // ignore service worker registration failures in restricted environments
-  });
 }
 
 function initMovies() {
@@ -2850,8 +2761,6 @@ async function init() {
   bindEvents();
   applySection("home");
   updateLandingStats();
-  updateOfflinePackBadge();
-  registerServiceWorker();
   await Promise.allSettled([hydrateMovieAssets(), loadMoreDiscoverMovies(), bootLiveFeeds()]);
   revealOnScroll();
 }
