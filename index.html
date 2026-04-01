@@ -109,7 +109,7 @@
         </div>
       </section>
 
-      <section id="moviesView" class="section-view hidden">
+      <section id="moviesView" class="section-view section-themed movies-themed hidden">
         <section class="hero">
           <div id="movieHeroBackdrop" class="hero-backdrop"></div>
           <div class="hero-overlay"></div>
@@ -156,6 +156,14 @@
             <h3>Community Reviews</h3>
             <span class="status-badge neutral">Live user vibe</span>
           </div>
+          <div class="review-search-wrap">
+            <input
+              id="reviewSearchInput"
+              type="search"
+              placeholder="Search movie reviews (e.g. Harry Potter, Spider-Man)..."
+            />
+            <span id="reviewSearchMeta" class="status-badge neutral">Showing top reviews</span>
+          </div>
           <div id="reviewsGrid" class="reviews-grid"></div>
         </section>
 
@@ -177,6 +185,11 @@
         <section class="panel">
           <h3>Hollywood Classics</h3>
           <div id="hollyGrid" class="card-grid"></div>
+        </section>
+
+        <section class="panel">
+          <h3>Fantasy & Disney Worlds</h3>
+          <div id="fantasyGrid" class="card-grid"></div>
         </section>
 
         <section class="panel">
@@ -210,7 +223,11 @@
         </section>
       </section>
 
-      <section id="newsView" class="section-view hidden">
+      <section id="newsView" class="section-view section-themed news-themed hidden">
+        <section class="panel section-banner news-banner">
+          <h2>Global Newsroom</h2>
+          <p>Live world headlines with cleaner reading cards and richer visual atmosphere.</p>
+        </section>
         <section class="panel controls-panel">
           <div class="news-filters">
             <button class="chip active" data-news-filter="all">All</button>
@@ -232,7 +249,11 @@
         </section>
       </section>
 
-      <section id="sportsView" class="section-view hidden">
+      <section id="sportsView" class="section-view section-themed sports-themed hidden">
+        <section class="panel section-banner sports-banner">
+          <h2>Sports Arena</h2>
+          <p>Top moments and player highlights with cinematic cards and stronger depth.</p>
+        </section>
         <section class="panel controls-panel">
           <div class="sports-filters">
             <button class="chip active" data-sports-filter="cricket">Cricket</button>

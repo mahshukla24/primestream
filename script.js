@@ -36,7 +36,7 @@ const MOVIES = [
   {
     title: "Spider-Man: Far From Home",
     poster: "https://image.tmdb.org/t/p/original/4q2NNj4S5dG2RLF9CpXsej7yXl.jpg",
-    trailer: "https://www.youtube.com/embed/Nt9L1jCKGnE",
+    trailer: "https://www.youtube.com/embed/aBlsrtxuwss",
     rating: 7.4,
     category: "Marvel",
     moods: ["Action", "Mind-blowing"],
@@ -252,6 +252,76 @@ const MOVIES = [
     moods: ["Action", "Mind-blowing"],
     tags: ["Action"],
     description: "A high-octane chase across a post-apocalyptic wasteland."
+  },
+  {
+    title: "Harry Potter and the Sorcerer's Stone",
+    poster: "https://image.tmdb.org/t/p/original/wuMc08IPKEatf9rnMNXvIDxqP4W.jpg",
+    trailer: "https://www.youtube.com/embed/VyHV0BRtdxo",
+    rating: 7.6,
+    category: "Hollywood",
+    moods: ["Fun", "Mind-blowing"],
+    tags: ["Mind", "Fantasy"],
+    description: "A young wizard discovers Hogwarts and begins a magical journey."
+  },
+  {
+    title: "Harry Potter and the Deathly Hallows: Part 2",
+    poster: "https://image.tmdb.org/t/p/original/c54HpQmuwXjHq2C9wmoACjxoom3.jpg",
+    trailer: "https://www.youtube.com/embed/mObK5XD8udk",
+    rating: 8.1,
+    category: "Hollywood",
+    moods: ["Action", "Mind-blowing"],
+    tags: ["Action", "Mind", "Fantasy"],
+    description: "The final battle at Hogwarts decides the fate of the wizarding world."
+  },
+  {
+    title: "The Chronicles of Narnia: The Lion, the Witch and the Wardrobe",
+    poster: "https://image.tmdb.org/t/p/original/iREd0rNCjYdf5Ar0vfaW32yrkm.jpg",
+    trailer: "https://www.youtube.com/embed/usEkWtuNn-w",
+    rating: 6.9,
+    category: "Hollywood",
+    moods: ["Fun", "Mind-blowing"],
+    tags: ["Fantasy"],
+    description: "Four siblings enter Narnia and join a legendary battle against dark magic."
+  },
+  {
+    title: "Pirates of the Caribbean: The Curse of the Black Pearl",
+    poster: "https://image.tmdb.org/t/p/original/z8onk7LV9Mmw6zKz4hT6pzzvmvl.jpg",
+    trailer: "https://www.youtube.com/embed/naQr0uTrH_s",
+    rating: 8.1,
+    category: "Hollywood",
+    moods: ["Action", "Fun"],
+    tags: ["Action", "Fantasy"],
+    description: "Captain Jack Sparrow races to break a cursed pirate legend."
+  },
+  {
+    title: "Frozen II",
+    poster: "https://image.tmdb.org/t/p/original/mINJaa34MtknCYl5AjtNJzWj8cD.jpg",
+    trailer: "https://www.youtube.com/embed/Zi4LMpSDccc",
+    rating: 6.8,
+    category: "Hollywood",
+    moods: ["Fun"],
+    tags: ["Fantasy"],
+    description: "Elsa and Anna journey beyond Arendelle to uncover ancient truths."
+  },
+  {
+    title: "Moana",
+    poster: "https://image.tmdb.org/t/p/original/9tzN8sPbyod2dsa0lwuvrwBDWra.jpg",
+    trailer: "https://www.youtube.com/embed/LKFuXETZUsI",
+    rating: 7.6,
+    category: "Hollywood",
+    moods: ["Fun", "Mind-blowing"],
+    tags: ["Fantasy"],
+    description: "A fearless voyager sails with Maui to restore the heart of Te Fiti."
+  },
+  {
+    title: "Aladdin",
+    poster: "https://image.tmdb.org/t/p/original/3iYQTLGoy7QnjcUYRJy4YrAgGvp.jpg",
+    trailer: "https://www.youtube.com/embed/foyufD52aog",
+    rating: 7.0,
+    category: "Hollywood",
+    moods: ["Fun"],
+    tags: ["Fantasy"],
+    description: "A street-smart dreamer discovers a magic lamp and a whole new world."
   }
 ];
 
@@ -336,7 +406,9 @@ const state = {
   },
   lastScrollY: 0,
   currentSearchTerm: "",
-  searchDebounceTimer: null
+  searchDebounceTimer: null,
+  reviewSearchTerm: "",
+  newsLoadToken: 0
 };
 
 const el = {
@@ -374,10 +446,13 @@ const el = {
   smartPicksGrid: document.getElementById("smartPicksGrid"),
   topPicksGrid: document.getElementById("topPicksGrid"),
   reviewsGrid: document.getElementById("reviewsGrid"),
+  reviewSearchInput: document.getElementById("reviewSearchInput"),
+  reviewSearchMeta: document.getElementById("reviewSearchMeta"),
   continueGrid: document.getElementById("continueGrid"),
   mcuGrid: document.getElementById("mcuGrid"),
   bollyGrid: document.getElementById("bollyGrid"),
   hollyGrid: document.getElementById("hollyGrid"),
+  fantasyGrid: document.getElementById("fantasyGrid"),
   actionGrid: document.getElementById("actionGrid"),
   mindGrid: document.getElementById("mindGrid"),
   discoverGrid: document.getElementById("discoverGrid"),
@@ -882,6 +957,13 @@ async function resolveMovieTrailer(movie) {
   if (state.trailerCache[movie.title]) {
     return state.trailerCache[movie.title];
   }
+  // Keep the hero Spider-Man trailer exactly as requested by user.
+  if (normText(movie.title).includes("spider-man: far from home")) {
+    const pinnedVideoId = videoIdFromEmbed(movie.trailer);
+    const pinned = pinnedVideoId ? trailerFromVideoId(pinnedVideoId) : movie.trailer;
+    state.trailerCache[movie.title] = pinned;
+    return pinned;
+  }
   const queries = [
     `${movie.title} official trailer english`,
     `${movie.title} official trailer hindi`,
@@ -1143,12 +1225,29 @@ function renderCommunityReviews() {
   if (!el.reviewsGrid) {
     return;
   }
-  const pool = [...movieCatalog()]
+  const query = (state.reviewSearchTerm || "").trim().toLowerCase();
+  const basePool = [...movieCatalog()]
     .filter((movie) => Number(movie.rating || 0) >= 7)
     .sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
     .slice(0, 14);
+  const pool = query
+    ? basePool.filter((movie) => {
+        const hay = `${movie.title} ${movie.category} ${(movie.tags || []).join(" ")} ${movie.description || ""}`.toLowerCase();
+        return hay.includes(query);
+      })
+    : basePool;
   const myReviews = reviewStateMap();
   const votes = reviewVotesMap();
+  if (el.reviewSearchMeta) {
+    el.reviewSearchMeta.textContent = query
+      ? `${pool.length} match${pool.length === 1 ? "" : "es"}`
+      : "Showing top reviews";
+    el.reviewSearchMeta.className = `status-badge ${query ? "success" : "neutral"}`;
+  }
+  if (!pool.length) {
+    el.reviewsGrid.innerHTML = `<p class="empty-text">No reviews found for "${escapeHtml(state.reviewSearchTerm)}".</p>`;
+    return;
+  }
   el.reviewsGrid.innerHTML = pool
     .map((movie) => {
       const token = encodeTitle(movie.title);
@@ -1206,12 +1305,16 @@ function renderMovieRows() {
   const marvel = allMovies.filter((movie) => movie.category === "Marvel");
   const bolly = allMovies.filter((movie) => movie.category === "Bollywood");
   const holly = allMovies.filter((movie) => movie.category === "Hollywood");
+  const fantasy = allMovies.filter((movie) => movie.tags?.includes("Fantasy"));
   const action = allMovies.filter((movie) => movie.tags?.includes("Action"));
   const mind = allMovies.filter((movie) => movie.tags?.includes("Mind"));
 
   el.mcuGrid.innerHTML = marvel.map((movie) => movieCardTemplate(movie)).join("");
   el.bollyGrid.innerHTML = bolly.map((movie) => movieCardTemplate(movie)).join("");
   el.hollyGrid.innerHTML = holly.map((movie) => movieCardTemplate(movie)).join("");
+  if (el.fantasyGrid) {
+    el.fantasyGrid.innerHTML = fantasy.map((movie) => movieCardTemplate(movie)).join("");
+  }
   el.actionGrid.innerHTML = action.map((movie) => movieCardTemplate(movie)).join("");
   el.mindGrid.innerHTML = mind.map((movie) => movieCardTemplate(movie)).join("");
 }
@@ -1546,6 +1649,8 @@ async function fetchReutersBackupNews() {
 async function fetchNews(filter = "all", options = {}) {
   const append = Boolean(options.append);
   const keepDisplay = Boolean(options.keepDisplay);
+  const requestToken = options.requestToken ?? state.newsLoadToken;
+  const isCurrentRequest = () => requestToken === state.newsLoadToken;
   updateStatusBadge(el.newsStatusBadge, "Loading", "neutral");
   updateStatusBadge(el.landingNewsBadge, "Loading", "neutral");
 
@@ -1575,6 +1680,9 @@ async function fetchNews(filter = "all", options = {}) {
 
   const merged = append ? [...state.news, ...collected] : collected;
   const uniqueNews = uniqueBy(merged, (article) => `${article.title}-${article.url}`).slice(0, 320);
+  if (!isCurrentRequest()) {
+    return;
+  }
   if (!uniqueNews.length) {
     updateStatusBadge(el.newsStatusBadge, "No Feed", "error");
     updateStatusBadge(el.landingNewsBadge, "No Feed", "error");
@@ -2099,15 +2207,23 @@ function revealOnScroll() {
 }
 
 async function loadNews() {
+  state.newsLoadToken += 1;
+  const requestToken = state.newsLoadToken;
   renderNewsSkeletons();
   const filter = state.newsFilter || "all";
   if (state.newsCache[filter]) {
+    if (requestToken !== state.newsLoadToken) {
+      return;
+    }
     state.news = state.newsCache[filter];
     renderNews(state.news);
     updateLandingStats();
     return;
   }
-  await fetchNews(filter, { append: false, keepDisplay: false });
+  await fetchNews(filter, { append: false, keepDisplay: false, requestToken });
+  if (requestToken !== state.newsLoadToken) {
+    return;
+  }
   state.newsCache[filter] = state.news;
   renderNews(state.news);
 }
@@ -2217,6 +2333,30 @@ function bindEvents() {
     const rateBtn = event.target.closest("[data-rate]");
     if (rateBtn) {
       rateMovie(decodeTitle(rateBtn.dataset.title), Number(rateBtn.dataset.rate));
+    }
+
+    const reviewLikeBtn = event.target.closest("[data-review-like]");
+    if (reviewLikeBtn) {
+      const title = decodeTitle(reviewLikeBtn.dataset.reviewLike);
+      const votes = reviewVotesMap();
+      const current = votes[title] || { likes: 0, dislikes: 0 };
+      votes[title] = { likes: Number(current.likes || 0) + 1, dislikes: Number(current.dislikes || 0) };
+      setReviewVotesMap(votes);
+      renderCommunityReviews();
+      toast("Review liked");
+      return;
+    }
+
+    const reviewDislikeBtn = event.target.closest("[data-review-dislike]");
+    if (reviewDislikeBtn) {
+      const title = decodeTitle(reviewDislikeBtn.dataset.reviewDislike);
+      const votes = reviewVotesMap();
+      const current = votes[title] || { likes: 0, dislikes: 0 };
+      votes[title] = { likes: Number(current.likes || 0), dislikes: Number(current.dislikes || 0) + 1 };
+      setReviewVotesMap(votes);
+      renderCommunityReviews();
+      toast("Review disliked");
+      return;
     }
 
     const profileAction = event.target.closest("[data-profile-action]");
@@ -2409,6 +2549,55 @@ function bindEvents() {
       })
         .then(() => renderSports())
         .catch(() => renderSports());
+    });
+  }
+
+  document.addEventListener("submit", (event) => {
+    const form = event.target.closest(".review-form");
+    if (!form) {
+      return;
+    }
+    event.preventDefault();
+    const token = form.dataset.movie;
+    const title = decodeTitle(token);
+    if (
+      !ensureAuth(() => {
+        const range = form.querySelector(`[data-review-range="${token}"]`);
+        const textNode = form.querySelector(`[data-review-text="${token}"]`);
+        const pendingRating = Number(range?.value || 7);
+        const pendingText = String(textNode?.value || "").trim();
+        if (!pendingText) {
+          toast("Please write a quick review");
+          return;
+        }
+        const map = reviewStateMap();
+        map[title] = { rating: Number(Math.min(10, Math.max(1, pendingRating)).toFixed(1)), text: pendingText };
+        setReviewStateMap(map);
+        renderCommunityReviews();
+        toast("Review submitted");
+      })
+    ) {
+      return;
+    }
+    const range = form.querySelector(`[data-review-range="${token}"]`);
+    const textNode = form.querySelector(`[data-review-text="${token}"]`);
+    const rating = Number(range?.value || 7);
+    const text = String(textNode?.value || "").trim();
+    if (!text) {
+      toast("Please write a quick review");
+      return;
+    }
+    const map = reviewStateMap();
+    map[title] = { rating: Number(Math.min(10, Math.max(1, rating)).toFixed(1)), text };
+    setReviewStateMap(map);
+    renderCommunityReviews();
+    toast("Review submitted");
+  });
+
+  if (el.reviewSearchInput) {
+    el.reviewSearchInput.addEventListener("input", (event) => {
+      state.reviewSearchTerm = String(event.target.value || "").trim();
+      renderCommunityReviews();
     });
   }
 
