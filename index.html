@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prime Stream</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-theme="dark">
+    <header id="navbar" class="navbar hidden">
+      <div class="logo">Prime <span>Stream</span></div>
+      <div class="nav-links">
+        <button id="homeBtn" class="nav-btn">Home</button>
+        <button id="sectionBtn" class="nav-btn active">Section</button>
+        <button id="myListBtn" class="nav-btn hidden">My List</button>
+      </div>
+      <div class="nav-actions">
+        <div class="search-wrap">
+          <input id="globalSearch" type="search" placeholder="Search..." />
+          <div id="searchSuggestions" class="search-suggestions hidden"></div>
+        </div>
+        <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">🌙</button>
+        <div class="profile-wrap">
+          <button id="profileBtn" class="profile-btn" aria-label="Profile">
+            <span class="avatar">👤</span> <span id="profileName">Guest</span>
+          </button>
+          <div id="profileMenu" class="profile-menu"></div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section id="landingView" class="landing-view">
+        <div class="landing-ambient" aria-hidden="true">
+          <span class="ambient-orb orb-a"></span>
+          <span class="ambient-orb orb-b"></span>
+          <span class="ambient-orb orb-c"></span>
+        </div>
+        <div class="landing-overlay">
+          <div class="landing-topline">
+            <span class="live-dot"></span>
+            <span>Cinematic OTT Gateway</span>
+            <span class="topline-sep">•</span>
+            <span>Movies + world stories + sports moments</span>
+          </div>
+
+          <div class="landing-hero-row">
+            <div class="landing-content">
+              <p class="landing-kicker">Welcome to Prime Stream</p>
+              <h1>Prime <span>Stream</span></h1>
+              <p>Step into a premium streaming entrance with blockbuster movies, world headlines, and sports highlights in one place.</p>
+              <div class="landing-stats">
+                <article>
+                  <strong id="landingMovieCount">0+</strong>
+                  <span>Movie picks</span>
+                </article>
+                <article>
+                  <strong id="landingNewsCount">0+</strong>
+                  <span>Global headlines</span>
+                </article>
+                <article>
+                  <strong id="landingSportsCount">0+</strong>
+                  <span>Sports highlights</span>
+                </article>
+              </div>
+              <div class="landing-actions">
+                <button class="primary-btn landing-enter-btn" data-category="movies">Enter Movies</button>
+                <button class="ghost-btn landing-enter-btn" data-category="news">Open World News</button>
+                <button class="ghost-btn landing-enter-btn" data-category="sports">Watch Sports</button>
+              </div>
+              <div class="landing-trust">
+                <span>4K style visuals</span>
+                <span>Global pulse</span>
+                <span>Smart discovery</span>
+              </div>
+            </div>
+
+            <aside class="landing-showcase" aria-label="Platform highlights">
+              <article class="showcase-card">
+                <h3>Trailer-First Movies</h3>
+                <p>Hero autoplay, watchlist, quick play, and discovery rows.</p>
+              </article>
+              <article class="showcase-card">
+                <h3>World News Feed</h3>
+                <p>Global pulse updates with a clean immersive newsroom vibe.</p>
+              </article>
+              <article class="showcase-card">
+                <h3>Sports Arena</h3>
+                <p>Cricket, football, chess, and badminton highlights in one stream.</p>
+              </article>
+            </aside>
+          </div>
+
+          <div class="category-grid">
+            <article class="category-card" data-category="movies">
+              <h2>🎬 Movies <span class="status-badge neutral">Curated + Discover</span></h2>
+              <p>Curated blockbuster picks with OTT-style interactions.</p>
+            </article>
+            <article class="category-card" data-category="news">
+              <h2>🌍 World News <span id="landingNewsBadge" class="status-badge neutral">Loading</span></h2>
+              <p>Global stories with clean reading flow and fast category switching.</p>
+            </article>
+            <article class="category-card" data-category="sports">
+              <h2>⚽ Sports Highlights <span id="landingSportsBadge" class="status-badge neutral">Loading</span></h2>
+              <p>English highlights stream for cricket, football, chess, and badminton.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="moviesView" class="section-view section-themed movies-themed hidden">
+        <section class="hero">
+          <div id="movieHeroBackdrop" class="hero-backdrop"></div>
+          <div class="hero-overlay"></div>
+          <div class="hero-content">
+            <span class="badge">Top Curated Pick</span>
+            <h1 id="movieHeroTitle">Spider-Man</h1>
+            <p id="movieHeroMeta">⭐ 0.0/10</p>
+            <p id="movieHeroDescription">Loading movie details...</p>
+            <div class="hero-actions">
+              <button id="heroTrailerBtn" class="primary-btn">▶ Watch Trailer</button>
+              <button id="heroWatchlistBtn" class="ghost-btn">+ Add to Watchlist</button>
+            </div>
+          </div>
+          <div id="movieHeroTrailer" class="hero-trailer-wrap"></div>
+        </section>
+
+        <section class="panel controls-panel">
+          <div class="mood-picker">
+            <span>Mood Picker:</span>
+            <button class="chip active" data-mood="Action">Action</button>
+            <button class="chip" data-mood="Fun">Fun</button>
+            <button class="chip" data-mood="Mind-blowing">Mind-blowing</button>
+          </div>
+          <button id="quickPlayBtn" class="primary-btn">🎬 Quick Play</button>
+        </section>
+
+        <section class="panel">
+          <h3>Mood Results</h3>
+          <div id="moodGrid" class="card-grid"></div>
+        </section>
+
+        <section class="panel">
+          <h3>Smart Picks</h3>
+          <div id="smartPicksGrid" class="card-grid"></div>
+        </section>
+
+        <section class="panel">
+          <h3>Top Picks by You</h3>
+          <div id="topPicksGrid" class="card-grid"></div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <h3>Community Reviews</h3>
+            <span class="status-badge neutral">Live user vibe</span>
+          </div>
+          <div class="review-search-wrap">
+            <input
+              id="reviewSearchInput"
+              type="search"
+              placeholder="Search movie reviews (e.g. Harry Potter, Spider-Man)..."
+            />
+            <span id="reviewSearchMeta" class="status-badge neutral">Showing top reviews</span>
+          </div>
+          <div id="reviewsGrid" class="reviews-grid"></div>
+        </section>
+
+        <section class="panel">
+          <h3>Continue Watching</h3>
+          <div id="continueGrid" class="card-grid"></div>
+        </section>
+
+        <section class="panel">
+          <h3>MCU Universe</h3>
+          <div id="mcuGrid" class="card-grid"></div>
+        </section>
+
+        <section class="panel">
+          <h3>Bollywood Hits</h3>
+          <div id="bollyGrid" class="card-grid"></div>
+        </section>
+
+        <section class="panel">
+          <h3>Fantasy & Disney Worlds</h3>
+          <div id="fantasyGrid" class="card-grid"></div>
+        </section>
+
+        <section class="panel">
+          <h3>Hollywood Classics</h3>
+          <div id="hollyGrid" class="card-grid"></div>
+        </section>
+
+        <section class="panel">
+          <h3>Action & Hype</h3>
+          <div id="actionGrid" class="card-grid"></div>
+        </section>
+
+        <section class="panel">
+          <h3>Mind-blowing Movies</h3>
+          <div id="mindGrid" class="card-grid"></div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <h3>Discover: Never Ending Movies</h3>
+            <button id="loadMoreMoviesBtn" class="ghost-btn">Load More</button>
+          </div>
+          <div id="discoverGrid" class="card-grid"></div>
+        </section>
+      </section>
+
+      <section id="myListView" class="section-view hidden">
+        <section class="panel">
+          <h3>My List</h3>
+          <p id="myListStats" class="empty-text"></p>
+          <div id="myListGrid" class="card-grid"></div>
+        </section>
+        <section class="panel">
+          <h3>Recently Viewed</h3>
+          <div id="myRecentGrid" class="card-grid"></div>
+        </section>
+      </section>
+
+      <section id="newsView" class="section-view section-themed news-themed hidden">
+        <section class="panel section-banner news-banner">
+          <h2>Global Newsroom</h2>
+          <p></p>
+        </section>
+        <section class="panel controls-panel">
+          <div class="news-filters">
+            <button class="chip active" data-news-filter="all">All</button>
+            <button class="chip" data-news-filter="tech">Tech</button>
+            <button class="chip" data-news-filter="business">Business</button>
+            <button class="chip" data-news-filter="science">Science</button>
+          </div>
+          <div class="status-actions">
+            <span id="newsStatusBadge" class="status-badge neutral">Loading</span>
+            <button id="refreshNewsBtn" class="ghost-btn">Refresh</button>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="section-head">
+            <h3>World News</h3>
+            <button id="loadMoreNewsBtn" class="ghost-btn">Load More</button>
+          </div>
+          <div id="newsGrid" class="news-grid"></div>
+        </section>
+      </section>
+
+      <section id="sportsView" class="section-view section-themed sports-themed hidden">
+        <section class="panel section-banner sports-banner">
+          <h2>Sports Arena</h2>
+          <p>Cinematic feed with official broadcasts and cleaner high-impact highlights.</p>
+        </section>
+        <section class="panel controls-panel">
+          <div class="sports-filters">
+            <button class="chip active" data-sports-filter="cricket">Cricket</button>
+            <button class="chip" data-sports-filter="football">Football</button>
+            <button class="chip" data-sports-filter="chess">Chess</button>
+            <button class="chip" data-sports-filter="badminton">Badminton</button>
+          </div>
+          <span id="sportsStatusBadge" class="status-badge neutral">Loading</span>
+        </section>
+        <section class="panel">
+          <div class="section-head">
+            <h3>Top Moments</h3>
+            <button id="loadMoreSportsBtn" class="ghost-btn">Load More</button>
+          </div>
+          <div id="sportsTopGrid" class="sports-grid"></div>
+        </section>
+        <section class="panel">
+          <h3>Player Highlights</h3>
+          <div id="sportsPlayerGrid" class="sports-grid"></div>
+        </section>
+      </section>
+    </main>
+
+    <button id="scrollTopBtn" class="scroll-top-btn" aria-label="Scroll to top">↑</button>
+    <div id="toastStack" class="toast-stack"></div>
+
+    <div id="trailerModal" class="modal">
+      <div class="modal-card trailer-card">
+        <button class="close-btn" data-close-modal="trailerModal">✕</button>
+        <iframe
+          id="trailerFrame"
+          title="Trailer player"
+          src=""
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      </div>
+    </div>
+
+    <div id="movieModal" class="modal">
+      <div class="modal-card movie-modal-card">
+        <button class="close-btn" data-close-modal="movieModal">✕</button>
+        <div id="movieModalBody"></div>
+      </div>
+    </div>
+
+    <div id="videoModal" class="modal">
+      <div class="modal-card video-card">
+        <button class="close-btn" data-close-modal="videoModal">✕</button>
+        <iframe
+          id="videoFrame"
+          title="Sports player"
+          src=""
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      </div>
+    </div>
+
+    <div id="authModal" class="modal">
+      <div class="modal-card auth-card">
+        <button class="close-btn" data-close-modal="authModal">✕</button>
+        <h3 id="authTitle">Login</h3>
+        <form id="authForm">
+          <div id="nameFieldWrap" class="field hidden">
+            <label for="authName">Username</label>
+            <input id="authName" type="text" />
+          </div>
+          <div class="field">
+            <label for="authEmail">Email</label>
+            <input id="authEmail" type="email" required />
+          </div>
+          <div class="field">
+            <label for="authPassword">Password</label>
+            <input id="authPassword" type="password" minlength="6" required />
+          </div>
+          <div id="confirmFieldWrap" class="field hidden">
+            <label for="authConfirm">Confirm Password</label>
+            <input id="authConfirm" type="password" />
+          </div>
+          <button id="authSubmitBtn" type="submit" class="primary-btn">Login</button>
+          <button id="authSwitchBtn" type="button" class="link-btn">Create account</button>
+        </form>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
