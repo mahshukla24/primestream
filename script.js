@@ -17,7 +17,11 @@ const MOVIE_PLACEHOLDER = "https://via.placeholder.com/600x900/141b2f/ffffff?tex
 const NEWS_PLACEHOLDER = "https://via.placeholder.com/900x520/11192d/ffffff?text=World+News";
 const SPORTS_PLACEHOLDER = "https://via.placeholder.com/900x520/11192d/ffffff?text=Sports+Highlights";
 const ADULT_KEYWORDS_RE =
-  /\b(nude|nudity|porn|xxx|sex|erotic|hot scene|18\+|adult movie|uncut)\b/i;
+  /\b(nude|nudity|porn|xxx|sex|erotic|hot scene|18\+|adult movie|uncut|sensual|intimate|bed scene)\b/i;
+const NO_ROMANCE_RE = /\b(romance|romantic|love story|erotic|sensual)\b/i;
+const ROMANCE_KEYWORDS_RE =
+  /\b(romance|romantic|kiss|kissing|love story|love affair|dating|passion|seduction|sensual)\b/i;
+const ALLOWED_MOVIE_LANGS = new Set(["en", "hi"]);
 const NON_ALLOWED_LANG_KEYWORDS_RE =
   /\b(tamil|telugu|malayalam|kannada|marathi|bengali|punjabi|gujarati|spanish|espanol|portuguese|bahasa|indonesian|turkish|thai|korean|japanese|russian|urdu)\b/i;
 const NON_ALLOWED_SCRIPT_RE =
@@ -28,6 +32,8 @@ const SPORTS_KEYWORD_RE =
   /\b(highlight|highlights|cricket|football|soccer|chess|badminton|goal|wicket|inning|checkmate|tournament|cup|league|final|semi|match)\b/i;
 const BLOCKED_SPORTS_LATIN_RE =
   /\b(resumen|partido|golazo|bahasa|naik|dunia|pertandingan|liga indonesia|turkiye)\b/i;
+const TRUSTED_SPORTS_CHANNEL_RE =
+  /\b(star sports|icc|bcci|cricket australia|england cricket|blackcaps|new zealand cricket|cricbuzz|espncricinfo|sky sports|sony sports|supersport|uefa|fifa|premier league|fide|bwf)\b/i;
 const IMPORTANT_SPORTS_RE =
   /\b(world cup|icc|champions trophy|ipl|ashes|bgt|euro|ucl|champions league|premier league|final|semi final|knockout|grandmaster|fide|olympics)\b/i;
 const NEWS_TOPIC_KEYWORDS = {
@@ -320,33 +326,43 @@ const MOVIES = [
 ];
 
 const SPORTS_QUERIES = {
-  cricket: "cricket highlights english commentary t20 ipl international match",
-  football: "football highlights english commentary ucl premier league",
+  cricket: "star sports cricket highlights english t20 odi world cup ipl",
+  football: "official football highlights english commentary ucl premier league",
   chess: "chess championship highlights english commentary",
-  badminton: "badminton highlights world tour english commentary"
+  badminton: "badminton highlights world tour english commentary official"
 };
 
 const SPORTS_QUERY_POOL = {
   cricket: [
-    "cricket highlights english commentary t20 ipl international match",
-    "cricket test match highlights english commentary",
-    "odi match highlights english commentary",
-    "icc champions trophy highlights english"
+    "star sports cricket highlights english t20 odi world cup ipl",
+    "rcb vs csk highlights english commentary",
+    "india vs australia t20 highlights english",
+    "india vs south africa odi highlights english",
+    "new zealand vs south africa highlights english",
+    "australia vs new zealand highlights english",
+    "icc t20 world cup highlights english",
+    "one day international cricket highlights english",
+    "cricket test match highlights english commentary official",
+    "ipl full match highlights english official"
   ],
   football: [
-    "football highlights english commentary ucl premier league",
-    "uefa champions league highlights english",
-    "premier league match highlights english",
-    "fifa world cup qualifiers highlights english"
+    "official football highlights english commentary ucl premier league",
+    "uefa champions league highlights english official",
+    "premier league match highlights english official",
+    "la liga highlights english commentary",
+    "serie a highlights english commentary",
+    "fifa world cup qualifiers highlights english official"
   ],
   chess: [
     "chess championship highlights english commentary",
     "fide candidates highlights english",
+    "chess world cup highlights english",
     "world chess championship game recap english",
     "chess tactical highlights english"
   ],
   badminton: [
     "badminton highlights world tour english commentary",
+    "bwf world championships highlights english",
     "bwf super series highlights english",
     "badminton finals highlights english commentary",
     "all england badminton highlights english"
@@ -398,6 +414,8 @@ const state = {
     chess: 0,
     badminton: 0
   },
+  sportsLoadToken: 0,
+  reviewApiCache: {},
   lastScrollY: 0,
   currentSearchTerm: "",
   searchDebounceTimer: null,
@@ -873,6 +891,15 @@ function isSafeMovieResult(item) {
   if (ADULT_KEYWORDS_RE.test(text)) {
     return false;
   }
+  const lang = String(item.original_language || "").toLowerCase();
+  if (!ALLOWED_MOVIE_LANGS.has(lang)) {
+    return false;
+  }
+  const genreIds = Array.isArray(item.genre_ids) ? item.genre_ids : [];
+  // TMDB romance genre id is 10749; keep feed action/fantasy oriented.
+  if (genreIds.includes(10749) || NO_ROMANCE_RE.test(text) || ROMANCE_KEYWORDS_RE.test(text)) {
+    return false;
+  }
   if (!item.poster_path && !item.backdrop_path) {
     return false;
   }
@@ -1249,10 +1276,18 @@ async function renderCommunityReviews() {
     return;
   }
   const query = (state.reviewSearchTerm || "").trim().toLowerCase();
-  const basePool = [...movieCatalog()]
-    .filter((movie) => Number(movie.rating || 0) >= 7)
+  const allMovies = [...movieCatalog()].filter((movie) => Number(movie.rating || 0) >= 7);
+  const preferredReviewPool = allMovies.filter((movie) => {
+    const title = normText(movie.title);
+    return (
+      movie.category === "Marvel" ||
+      title.includes("harry potter") ||
+      (movie.tags || []).includes("Fantasy")
+    );
+  });
+  const basePool = (preferredReviewPool.length ? preferredReviewPool : allMovies)
     .sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
-    .slice(0, 14);
+    .slice(0, 18);
   const pool = query
     ? basePool.filter((movie) => {
         const hay = `${movie.title} ${movie.category} ${(movie.tags || []).join(" ")} ${movie.description || ""}`.toLowerCase();
@@ -1812,23 +1847,32 @@ function renderNewsSkeletons() {
 
 const NON_ENGLISH_VIDEO_RE =
   /தமிழ்|తెలుగు|ಕನ್ನಡ|മലയാളം|বাংলা|اردو|हाइलाइट्स|हाइलाइट/i;
-const SPORTS_SPAM_RE = /prediction|dream11|fantasy|live stream|match live now|betting/i;
+const SPORTS_SPAM_RE = /prediction|dream11|fantasy|live stream|match live now|betting|reaction/i;
 const HINDI_TRAIL_RE = /[\u0900-\u097F]|हिंदी|हाइलाइट|हाइलाइट्स|हिन्दी|भारत|इंग्लैंड|विश्व कप|मैच/i;
 const SPORTS_TITLE_BLOCKLIST_RE =
   /\b(hindi|tamil|telugu|malayalam|kannada|marathi|bengali|urdu|বাংলা|தமிழ்|తెలుగు|ಕನ್ನಡ)\b/i;
+const YOUTUBE_SHORTS_RE = /\/shorts\/|#shorts|\bshorts\b/i;
+const SPORTS_EDITORIAL_RE = /\b(reaction|debate|analysis|news|press conference|preview)\b/i;
 
 function isEnglishSportsItem(item) {
   const title = item.snippet?.title || "";
   const description = item.snippet?.description || "";
   const text = `${title} ${description}`;
   const lowerTitle = title.toLowerCase();
+  const channel = String(item.snippet?.channelTitle || "").toLowerCase();
   if (!item.id?.videoId) {
     return false;
   }
   if (SPORTS_TITLE_BLOCKLIST_RE.test(lowerTitle) || HINDI_TRAIL_RE.test(title)) {
     return false;
   }
+  if (YOUTUBE_SHORTS_RE.test(text) || SPORTS_EDITORIAL_RE.test(text.toLowerCase())) {
+    return false;
+  }
   if (NON_ENGLISH_VIDEO_RE.test(text) || SPORTS_SPAM_RE.test(text.toLowerCase())) {
+    return false;
+  }
+  if (!/(star sports|icc|bcci|ipl|sony sports|tnt sports|sky sports|premier league|uefa|fifa|bwf|fide|chesscom|chess\.com)/i.test(channel)) {
     return false;
   }
   if (BLOCKED_SPORTS_LATIN_RE.test(text.toLowerCase())) {
@@ -1853,6 +1897,9 @@ function isStrictSportsItem(item) {
     return false;
   }
   if (HINDI_TRAIL_RE.test(text) || SPORTS_TITLE_BLOCKLIST_RE.test(lower)) {
+    return false;
+  }
+  if (YOUTUBE_SHORTS_RE.test(text) || SPORTS_EDITORIAL_RE.test(lower)) {
     return false;
   }
   return true;
@@ -1884,41 +1931,88 @@ function scoreSportsImportance(item) {
   return score;
 }
 
+async function fetchSportsFastBatch(queries, cacheKey, append = false) {
+  const firstQueries = uniqueBy((queries || []).slice(0, 2), (item) => item);
+  if (!firstQueries.length) {
+    return;
+  }
+  const responses = await Promise.allSettled(
+    firstQueries.map((q) => {
+      const url = `${YOUTUBE_BASE}?part=snippet&type=video&videoEmbeddable=true&safeSearch=strict&relevanceLanguage=en&maxResults=50&order=date&q=${encodeURIComponent(
+        q
+      )}&key=${YOUTUBE_API_KEY}`;
+      return fetchJSONWithFallback(url, { cacheKey: `sports.fast.${cacheKey}.${q}`, ttl: 1000 * 60 * 60 * 6 });
+    })
+  );
+  const collected = [];
+  responses.forEach((result) => {
+    if (result.status !== "fulfilled") {
+      return;
+    }
+    const filtered = (result.value.items || []).filter(isStrictSportsItem);
+    collected.push(...filtered);
+  });
+  const merged = append ? [...state.sportsVideos, ...collected] : collected;
+  state.sportsVideos = uniqueBy(merged, (item) => item.id?.videoId)
+    .sort((a, b) => scoreSportsImportance(b) - scoreSportsImportance(a))
+    .slice(0, 620);
+}
+
+async function fetchSportsBackfill(queries, cacheKey) {
+  const backlog = uniqueBy((queries || []).slice(2), (item) => item);
+  if (!backlog.length) {
+    return;
+  }
+  const responses = await Promise.allSettled(
+    backlog.map((q) => {
+      const url = `${YOUTUBE_BASE}?part=snippet&type=video&videoEmbeddable=true&safeSearch=strict&relevanceLanguage=en&maxResults=50&order=date&q=${encodeURIComponent(
+        q
+      )}&key=${YOUTUBE_API_KEY}`;
+      return fetchJSONWithFallback(url, { cacheKey: `sports.backfill.${cacheKey}.${q}`, ttl: 1000 * 60 * 60 * 6 });
+    })
+  );
+  const extras = [];
+  responses.forEach((result) => {
+    if (result.status !== "fulfilled") {
+      return;
+    }
+    const filtered = (result.value.items || []).filter(isStrictSportsItem);
+    extras.push(...filtered);
+  });
+  const merged = uniqueBy([...state.sportsVideos, ...extras], (item) => item.id?.videoId)
+    .sort((a, b) => scoreSportsImportance(b) - scoreSportsImportance(a))
+    .slice(0, 620);
+  state.sportsVideos = merged;
+  state.sportsCache[state.sportsTab || "cricket"] = merged;
+  renderSports();
+  updateLandingStats();
+}
+
 async function fetchSports(query, cacheKey = query, options = {}) {
   const append = Boolean(options.append);
   const resetDisplay = options.resetDisplay !== false;
   const extraQueries = options.extraQueries || [];
-  updateStatusBadge(el.sportsStatusBadge, "Loading", "neutral");
+  state.sportsLoadToken += 1;
+  const requestToken = state.sportsLoadToken;
+  state.sportsLoadToken = requestToken;
+  updateStatusBadge(el.sportsStatusBadge, "Loading fast feed", "neutral");
   updateStatusBadge(el.landingSportsBadge, "Loading", "neutral");
 
   const queries = uniqueBy([query, ...extraQueries], (item) => item);
-  const collected = [];
-  for (const q of queries) {
-    try {
-      const url = `${YOUTUBE_BASE}?part=snippet&type=video&videoEmbeddable=true&safeSearch=strict&relevanceLanguage=en&maxResults=50&order=date&q=${encodeURIComponent(
-        q
-      )}&key=${YOUTUBE_API_KEY}`;
-      const data = await fetchJSONWithFallback(url, { cacheKey: `sports.${cacheKey}.${q}` });
-      const filtered = (data.items || []).filter(isStrictSportsItem);
-      collected.push(...filtered);
-      if (collected.length >= 160) {
-        break;
-      }
-    } catch (_error) {
-      // try next query from pool
-    }
+  await fetchSportsFastBatch(queries, cacheKey, append);
+  if (requestToken !== state.sportsLoadToken) {
+    return;
   }
-
-  const merged = append ? [...state.sportsVideos, ...collected] : collected;
-  state.sportsVideos = uniqueBy(merged, (item) => item.id?.videoId).slice(0, 420);
   if (resetDisplay) {
-    state.sportsDisplayCount = 36;
+    state.sportsDisplayCount = 72;
   }
+  renderSports();
 
   const hasFeed = state.sportsVideos.length > 0;
   updateStatusBadge(el.sportsStatusBadge, hasFeed ? "Live Highlights (EN)" : "No Feed", hasFeed ? "success" : "warn");
   updateStatusBadge(el.landingSportsBadge, hasFeed ? "Live" : "No Feed", hasFeed ? "success" : "warn");
   updateLandingStats();
+  fetchSportsBackfill(queries, cacheKey).catch(() => {});
 }
 
 function sportsCardTemplate(item) {
@@ -2607,7 +2701,7 @@ function bindEvents() {
     button.addEventListener("click", () => {
       el.sportsFilterButtons.forEach((node) => node.classList.remove("active"));
       button.classList.add("active");
-      state.sportsDisplayCount = 36;
+      state.sportsDisplayCount = 72;
       loadSports(button.dataset.sportsFilter).catch(() => {
         updateStatusBadge(el.sportsStatusBadge, "Error", "error");
         updateStatusBadge(el.landingSportsBadge, "Error", "error");
@@ -2618,8 +2712,8 @@ function bindEvents() {
 
   if (el.loadMoreSportsBtn) {
     el.loadMoreSportsBtn.addEventListener("click", () => {
-      state.sportsDisplayCount += 24;
-      const needMore = state.sportsVideos.length - state.sportsDisplayCount < 24;
+      state.sportsDisplayCount += 40;
+      const needMore = state.sportsVideos.length - state.sportsDisplayCount < 40;
       if (!needMore) {
         renderSports();
         return;
