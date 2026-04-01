@@ -31,6 +31,11 @@ const BLOCKED_SPORTS_LATIN_RE =
   /\b(resumen|partido|golazo|bahasa|naik|dunia|pertandingan|liga indonesia|turkiye)\b/i;
 const IMPORTANT_SPORTS_RE =
   /\b(world cup|icc|champions trophy|ipl|ashes|bgt|euro|ucl|champions league|premier league|final|semi final|knockout|grandmaster|fide|olympics)\b/i;
+const NEWS_TOPIC_KEYWORDS = {
+  tech: /\b(tech|technology|ai|artificial intelligence|software|app|startup|chip|cyber|google|microsoft|apple|meta)\b/i,
+  business: /\b(business|market|stock|stocks|finance|economy|bank|trade|investment|company|earnings|ipo)\b/i,
+  science: /\b(science|research|space|nasa|physics|biology|climate|astronomy|laboratory|innovation)\b/i
+};
 
 const MOVIES = [
   {
@@ -373,7 +378,8 @@ const STORAGE = {
   fallbackRecent: "primeStream.guest.recent",
   fallbackContinue: "primeStream.guest.continue",
   movieAssets: "primeStream.movieAssets",
-  discoverCache: "primeStream.discoverCache"
+  discoverCache: "primeStream.discoverCache",
+  offlinePack: "primeStream.offlinePack"
 };
 
 const state = {
@@ -430,6 +436,8 @@ const el = {
   landingSportsCount: document.getElementById("landingSportsCount"),
   landingNewsBadge: document.getElementById("landingNewsBadge"),
   landingSportsBadge: document.getElementById("landingSportsBadge"),
+  offlinePackBtn: document.getElementById("offlinePackBtn"),
+  offlineReadyBadge: document.getElementById("offlineReadyBadge"),
 
   moviesView: document.getElementById("moviesView"),
   movieHeroBackdrop: document.getElementById("movieHeroBackdrop"),
@@ -511,6 +519,14 @@ function getJSON(key, fallback) {
 
 function setJSON(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function getOfflinePack() {
+  return getJSON(STORAGE.offlinePack, null);
+}
+
+function setOfflinePack(pack) {
+  setJSON(STORAGE.offlinePack, pack);
 }
 
 function toCacheKey(key) {
@@ -781,6 +797,23 @@ function updateLandingStats() {
   if (el.landingSportsCount) {
     el.landingSportsCount.textContent = `${state.sportsVideos.length || 0}+`;
   }
+  updateOfflinePackBadge();
+}
+
+function updateOfflinePackBadge() {
+  if (!el.offlineReadyBadge) {
+    return;
+  }
+  const pack = getOfflinePack();
+  if (!pack?.preparedAt) {
+    updateStatusBadge(el.offlineReadyBadge, "Offline pack not ready", "neutral");
+    return;
+  }
+  if (!navigator.onLine) {
+    updateStatusBadge(el.offlineReadyBadge, "Offline mode ready", "success");
+    return;
+  }
+  updateStatusBadge(el.offlineReadyBadge, "Offline pack ready", "success");
 }
 
 function cycleNewsUrls(filter, includeGlobalFallback = false) {
@@ -1601,6 +1634,18 @@ function isLikelyEnglish(text) {
   return nonLatin / value.length < 0.18;
 }
 
+function filterNewsByTopic(articles, filter) {
+  if (filter === "all") {
+    return articles;
+  }
+  const re = NEWS_TOPIC_KEYWORDS[filter];
+  if (!re) {
+    return articles;
+  }
+  const topical = articles.filter((article) => re.test(`${article.title || ""} ${article.description || ""}`));
+  return topical.length ? topical : articles;
+}
+
 function toNewsCardShape(article) {
   return {
     title: article.title || "Untitled",
@@ -1646,17 +1691,9 @@ async function fetchReutersBackupNews() {
   }
 }
 
-async function fetchNews(filter = "all", options = {}) {
-  const append = Boolean(options.append);
-  const keepDisplay = Boolean(options.keepDisplay);
-  const requestToken = options.requestToken ?? state.newsLoadToken;
-  const isCurrentRequest = () => requestToken === state.newsLoadToken;
-  updateStatusBadge(el.newsStatusBadge, "Loading", "neutral");
-  updateStatusBadge(el.landingNewsBadge, "Loading", "neutral");
-
+async function fetchNewsCollection(filter = "all") {
   const urls = cycleNewsUrls(filter, true);
   const collected = [];
-
   for (const url of urls) {
     try {
       const data = await fetchJSONWithFallback(url, { cacheKey: `news.${filter}.${url}` });
@@ -1673,11 +1710,44 @@ async function fetchNews(filter = "all", options = {}) {
     }
   }
 
+  // Extra fallback for topic filters: derive category set from global feed if API topic is sparse.
+  if (filter !== "all" && collected.length < 24) {
+    const globalUrls = cycleNewsUrls("all", true);
+    for (const url of globalUrls) {
+      try {
+        const data = await fetchJSONWithFallback(url, { cacheKey: `news.seed.${filter}.${url}` });
+        const filtered = (data.articles || [])
+          .filter((article) => article.url && article.title)
+          .filter((article) => isLikelyEnglish(`${article.title} ${article.description || ""}`))
+          .map(toNewsCardShape);
+        collected.push(...filtered);
+        if (collected.length >= 170) {
+          break;
+        }
+      } catch (_error) {
+        // keep trying other seeds
+      }
+    }
+  }
+
   if (!collected.length) {
     const backup = await fetchReutersBackupNews();
     collected.push(...backup);
   }
 
+  let uniqueNews = uniqueBy(collected, (article) => `${article.title}-${article.url}`).slice(0, 320);
+  uniqueNews = filterNewsByTopic(uniqueNews, filter);
+  return uniqueNews;
+}
+
+async function fetchNews(filter = "all", options = {}) {
+  const append = Boolean(options.append);
+  const keepDisplay = Boolean(options.keepDisplay);
+  const requestToken = options.requestToken ?? state.newsLoadToken;
+  const isCurrentRequest = () => requestToken === state.newsLoadToken;
+  updateStatusBadge(el.newsStatusBadge, "Loading", "neutral");
+  updateStatusBadge(el.landingNewsBadge, "Loading", "neutral");
+  const collected = await fetchNewsCollection(filter);
   const merged = append ? [...state.news, ...collected] : collected;
   const uniqueNews = uniqueBy(merged, (article) => `${article.title}-${article.url}`).slice(0, 320);
   if (!isCurrentRequest()) {
@@ -2211,6 +2281,24 @@ async function loadNews() {
   const requestToken = state.newsLoadToken;
   renderNewsSkeletons();
   const filter = state.newsFilter || "all";
+  if (!navigator.onLine) {
+    const pack = getOfflinePack();
+    const offlineNews = pack?.newsByFilter?.[filter] || pack?.newsByFilter?.all || [];
+    if (offlineNews.length) {
+      state.news = offlineNews;
+      state.newsCache[filter] = offlineNews;
+      renderNews(state.news);
+      updateStatusBadge(el.newsStatusBadge, "Offline Pack", "warn");
+      updateStatusBadge(el.landingNewsBadge, "Offline", "warn");
+      updateLandingStats();
+      return;
+    }
+    state.news = [];
+    renderNews(state.news);
+    updateStatusBadge(el.newsStatusBadge, "Offline No Pack", "error");
+    updateStatusBadge(el.landingNewsBadge, "Offline", "error");
+    return;
+  }
   if (state.newsCache[filter]) {
     if (requestToken !== state.newsLoadToken) {
       return;
@@ -2231,6 +2319,18 @@ async function loadNews() {
 async function loadSports(tab) {
   state.sportsTab = tab;
   renderSportsSkeletons();
+  if (!navigator.onLine) {
+    const pack = getOfflinePack();
+    const offlineSports = pack?.sportsByTab?.[tab] || [];
+    if (offlineSports.length) {
+      state.sportsVideos = offlineSports;
+      renderSports();
+      updateStatusBadge(el.sportsStatusBadge, "Offline Pack", "warn");
+      updateStatusBadge(el.landingSportsBadge, "Offline", "warn");
+      updateLandingStats();
+      return;
+    }
+  }
   if (SPORTS_QUERIES[tab] && state.sportsCache[tab]) {
     state.sportsVideos = state.sportsCache[tab];
     renderSports();
@@ -2247,6 +2347,55 @@ async function loadSports(tab) {
     state.sportsCache[tab] = state.sportsVideos;
   }
   renderSports();
+}
+
+async function prepareOfflinePack() {
+  if (!el.offlinePackBtn) {
+    return;
+  }
+  const button = el.offlinePackBtn;
+  const previousLabel = button.textContent;
+  button.disabled = true;
+  button.textContent = "Preparing...";
+  try {
+    const newsByFilter = {};
+    for (const filter of ["all", "tech", "business", "science"]) {
+      const cached = state.newsCache[filter] || [];
+      if (cached.length) {
+        newsByFilter[filter] = cached.slice(0, 160);
+        continue;
+      }
+      if (navigator.onLine) {
+        const snapshot = await fetchNewsCollection(filter);
+        if (snapshot.length) {
+          newsByFilter[filter] = snapshot.slice(0, 160);
+        }
+      }
+    }
+
+    const sportsByTab = {};
+    for (const tab of ["cricket", "football", "chess", "badminton"]) {
+      const cache = state.sportsCache[tab] || (tab === state.sportsTab ? state.sportsVideos : []);
+      if (cache?.length) {
+        sportsByTab[tab] = cache.slice(0, 180);
+      }
+    }
+
+    setOfflinePack({
+      preparedAt: new Date().toISOString(),
+      newsByFilter,
+      sportsByTab,
+      discoverMovies: state.discoverMovies.slice(0, 220),
+      dynamicMovies: Object.values(state.dynamicMovies).slice(0, 220)
+    });
+    updateOfflinePackBadge();
+    toast("Offline pack ready for safer class demo");
+  } catch (_error) {
+    toast("Offline pack could not be prepared");
+  } finally {
+    button.disabled = false;
+    button.textContent = previousLabel;
+  }
 }
 
 function bindEvents() {
@@ -2552,6 +2701,12 @@ function bindEvents() {
     });
   }
 
+  if (el.offlinePackBtn) {
+    el.offlinePackBtn.addEventListener("click", () => {
+      prepareOfflinePack();
+    });
+  }
+
   document.addEventListener("submit", (event) => {
     const form = event.target.closest(".review-form");
     if (!form) {
@@ -2636,6 +2791,25 @@ function bindEvents() {
   el.scrollTopBtn.addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
+
+  window.addEventListener("offline", () => {
+    updateOfflinePackBadge();
+    toast("Offline mode: using saved pack where available");
+  });
+
+  window.addEventListener("online", () => {
+    updateOfflinePackBadge();
+    toast("Back online");
+  });
+}
+
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) {
+    return;
+  }
+  navigator.serviceWorker.register("./sw.js").catch(() => {
+    // ignore service worker registration failures in restricted environments
+  });
 }
 
 function initMovies() {
@@ -2676,6 +2850,8 @@ async function init() {
   bindEvents();
   applySection("home");
   updateLandingStats();
+  updateOfflinePackBadge();
+  registerServiceWorker();
   await Promise.allSettled([hydrateMovieAssets(), loadMoreDiscoverMovies(), bootLiveFeeds()]);
   revealOnScroll();
 }

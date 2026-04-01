@@ -37,12 +37,18 @@
 
     <main>
       <section id="landingView" class="landing-view">
+        <div class="landing-ambient" aria-hidden="true">
+          <span class="ambient-orb orb-a"></span>
+          <span class="ambient-orb orb-b"></span>
+          <span class="ambient-orb orb-c"></span>
+        </div>
         <div class="landing-overlay">
           <div class="landing-topline">
             <span class="live-dot"></span>
             <span>Cinematic OTT Gateway</span>
             <span class="topline-sep">•</span>
             <span>Live news + sports + movies</span>
+            <span id="offlineReadyBadge" class="status-badge neutral">Offline pack not ready</span>
           </div>
 
           <div class="landing-hero-row">
@@ -68,6 +74,7 @@
                 <button class="primary-btn landing-enter-btn" data-category="movies">Enter Movies</button>
                 <button class="ghost-btn landing-enter-btn" data-category="news">Open World News</button>
                 <button class="ghost-btn landing-enter-btn" data-category="sports">Watch Sports</button>
+                <button id="offlinePackBtn" class="ghost-btn">⬇ Prepare Offline Pack</button>
               </div>
               <div class="landing-trust">
                 <span>4K style visuals</span>
