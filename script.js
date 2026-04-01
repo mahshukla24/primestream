@@ -13,7 +13,7 @@ const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/original";
 const API_CACHE_PREFIX = "primeStream.apiCache.";
 const API_CACHE_TTL_MS = 1000 * 60 * 30;
 const FETCH_TIMEOUT_MS = 12000;
-const MOVIE_PLACEHOLDER = "https://via.placeholder.com/600x900/141b2f/ffffff?text=Prime+Stream";
+const MOVIE_PLACEHOLDER = "https://image.tmdb.org/t/p/original/u1v5e0Luwf9RguM4M6uQd5Qk66v.jpg";
 const NEWS_PLACEHOLDER = "https://via.placeholder.com/900x520/11192d/ffffff?text=World+News";
 const SPORTS_PLACEHOLDER = "https://via.placeholder.com/900x520/11192d/ffffff?text=Sports+Highlights";
 const ADULT_KEYWORDS_RE =
@@ -44,14 +44,14 @@ const NEWS_TOPIC_KEYWORDS = {
 
 const MOVIES = [
   {
-    title: "Spider-Man: Far From Home",
+    title: "Spider-Man: Brand New Day",
     poster: "https://image.tmdb.org/t/p/original/4q2NNj4S5dG2RLF9CpXsej7yXl.jpg",
     trailer: "https://www.youtube.com/embed/aBlsrtxuwss",
     rating: 7.4,
     category: "Marvel",
     moods: ["Action", "Mind-blowing"],
     tags: ["Action", "Top10"],
-    description: "Peter Parker faces global threats while balancing hero duties with teenage life."
+    description: "Spider-Man: Brand New Day trailer spotlight with high-energy action and cinematic scale."
   },
   {
     title: "Spider-Man: Homecoming",
@@ -900,6 +900,15 @@ function isSafeMovieResult(item) {
   if (genreIds.includes(10749) || NO_ROMANCE_RE.test(text) || ROMANCE_KEYWORDS_RE.test(text)) {
     return false;
   }
+  const voteCount = Number(item.vote_count || 0);
+  const popularity = Number(item.popularity || 0);
+  // Prefer well-known releases to avoid obscure/low-quality poster assets.
+  if (voteCount > 0 && voteCount < 60) {
+    return false;
+  }
+  if (popularity > 0 && popularity < 12) {
+    return false;
+  }
   if (!item.poster_path && !item.backdrop_path) {
     return false;
   }
@@ -911,8 +920,10 @@ function tmdbToMovie(item) {
     return null;
   }
   const title = item.title || item.name || "Untitled Movie";
-  const poster = item.poster_path ? `${TMDB_IMAGE_BASE}${item.poster_path}` : MOVIE_PLACEHOLDER;
-  const backdrop = item.backdrop_path ? `${TMDB_IMAGE_BASE}${item.backdrop_path}` : poster;
+  const backdrop = item.backdrop_path ? `${TMDB_IMAGE_BASE}${item.backdrop_path}` : "";
+  const poster = item.poster_path
+    ? `${TMDB_IMAGE_BASE}${item.poster_path}`
+    : backdrop || MOVIE_PLACEHOLDER;
   const language = String(item.original_language || "").toLowerCase();
   const category =
     language === "hi"
@@ -987,9 +998,15 @@ async function resolveMovieTrailer(movie) {
     return state.trailerCache[movie.title];
   }
   // Keep the hero Spider-Man trailer exactly as requested by user.
-  if (normText(movie.title).includes("spider-man: far from home")) {
+  if (normText(movie.title).includes("spider-man: brand new day")) {
     const pinnedVideoId = videoIdFromEmbed(movie.trailer);
     const pinned = pinnedVideoId ? trailerFromVideoId(pinnedVideoId) : movie.trailer;
+    state.trailerCache[movie.title] = pinned;
+    return pinned;
+  }
+  if (normText(movie.title).includes("spider-man: far from home")) {
+    const pinnedVideoId = videoIdFromEmbed("https://www.youtube.com/embed/aBlsrtxuwss");
+    const pinned = pinnedVideoId ? trailerFromVideoId(pinnedVideoId) : "https://www.youtube.com/embed/aBlsrtxuwss";
     state.trailerCache[movie.title] = pinned;
     return pinned;
   }
@@ -1130,10 +1147,13 @@ function updateHero(movie) {
   el.movieHeroBackdrop.style.backgroundImage = `url(${heroImage})`;
   resolveMovieTrailer(movie).then((embed) => {
     const sep = embed.includes("?") ? "&" : "?";
+    const videoId = videoIdFromEmbed(embed);
+    const loopPlaylist = videoId ? `&playlist=${videoId}` : "";
+    // Prefer highest available stream quality for hero trailer.
     el.movieHeroTrailer.innerHTML = `
       <iframe
         title="Hero trailer preview"
-        src="${embed}${sep}autoplay=1&mute=1&controls=0&loop=1"
+        src="${embed}${sep}autoplay=1&mute=1&controls=0&loop=1${loopPlaylist}&vq=hd2160&hd=1&rel=0&modestbranding=1&playsinline=1"
         allow="autoplay; encrypted-media; picture-in-picture"
       ></iframe>
     `;
@@ -1144,11 +1164,13 @@ function movieCardTemplate(movie, options = {}) {
   const inList = getWatchlist().includes(movie.title);
   const progress = getContinueWatching()[movie.title] || 0;
   const token = encodeTitle(movie.title);
+  const posterSrc = movie.poster || movie.backdrop || MOVIE_PLACEHOLDER;
+  const posterFallback = movie.backdrop || MOVIE_PLACEHOLDER;
   return `
     <article class="movie-card reveal" data-movie-title="${token}">
-      <img loading="lazy" src="${movie.poster || MOVIE_PLACEHOLDER}" alt="${escapeHtml(
+      <img loading="lazy" src="${posterSrc}" alt="${escapeHtml(
     movie.title
-  )}" onerror="this.src='${MOVIE_PLACEHOLDER}'" />
+  )}" onerror="this.src='${posterFallback}'" />
       <div class="movie-card-info">
         <h4>${escapeHtml(movie.title)}</h4>
         <p>⭐ ${Number(movie.rating || 0).toFixed(1)}</p>
@@ -1514,12 +1536,14 @@ async function openMovieModal(title) {
   const inList = getWatchlist().includes(title);
   const selected = Number(getRatings()[title] || 0);
   const embed = await resolveMovieTrailer(movie);
+  const detailsPoster = movie.poster || movie.backdrop || MOVIE_PLACEHOLDER;
+  const detailsBackdrop = movie.backdrop || movie.poster || MOVIE_PLACEHOLDER;
   el.movieModalBody.innerHTML = `
-    <div class="details-hero" style="background-image:url('${movie.backdrop || movie.poster || MOVIE_PLACEHOLDER}')"></div>
+    <div class="details-hero" style="background-image:url('${detailsBackdrop}')"></div>
     <div class="details-content">
-      <img class="details-poster" src="${movie.poster || MOVIE_PLACEHOLDER}" alt="${escapeHtml(
+      <img class="details-poster" src="${detailsPoster}" alt="${escapeHtml(
     movie.title
-  )}" onerror="this.src='${MOVIE_PLACEHOLDER}'" />
+  )}" onerror="this.src='${detailsBackdrop}'" />
       <div>
         <h2>${escapeHtml(movie.title)}</h2>
         <p class="details-meta">${escapeHtml(movie.category)} • ⭐ ${Number(movie.rating || 0).toFixed(1)}</p>
