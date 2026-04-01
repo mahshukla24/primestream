@@ -38,24 +38,60 @@
     <main>
       <section id="landingView" class="landing-view">
         <div class="landing-overlay">
-          <div class="landing-content">
-            <h1>Prime <span>Stream</span></h1>
-            <p>Movies, world news, and sports highlights in one premium platform.</p>
-            <div class="landing-stats">
-              <article>
-                <strong id="landingMovieCount">0+</strong>
-                <span>Movie picks</span>
-              </article>
-              <article>
-                <strong id="landingNewsCount">0+</strong>
-                <span>Global headlines</span>
-              </article>
-              <article>
-                <strong id="landingSportsCount">0+</strong>
-                <span>Sports highlights</span>
-              </article>
-            </div>
+          <div class="landing-topline">
+            <span class="live-dot"></span>
+            <span>Cinematic OTT Gateway</span>
+            <span class="topline-sep">•</span>
+            <span>Live news + sports + movies</span>
           </div>
+
+          <div class="landing-hero-row">
+            <div class="landing-content">
+              <p class="landing-kicker">Welcome to Prime Stream</p>
+              <h1>Prime <span>Stream</span></h1>
+              <p>Step into a premium streaming entrance with blockbuster movies, world headlines, and sports highlights in one place.</p>
+              <div class="landing-stats">
+                <article>
+                  <strong id="landingMovieCount">0+</strong>
+                  <span>Movie picks</span>
+                </article>
+                <article>
+                  <strong id="landingNewsCount">0+</strong>
+                  <span>Global headlines</span>
+                </article>
+                <article>
+                  <strong id="landingSportsCount">0+</strong>
+                  <span>Sports highlights</span>
+                </article>
+              </div>
+              <div class="landing-actions">
+                <button class="primary-btn landing-enter-btn" data-category="movies">Enter Movies</button>
+                <button class="ghost-btn landing-enter-btn" data-category="news">Open World News</button>
+                <button class="ghost-btn landing-enter-btn" data-category="sports">Watch Sports</button>
+              </div>
+              <div class="landing-trust">
+                <span>4K style visuals</span>
+                <span>Real API feeds</span>
+                <span>Smart discovery</span>
+              </div>
+            </div>
+
+            <aside class="landing-showcase" aria-label="Platform highlights">
+              <article class="showcase-card">
+                <h3>Trailer-First Movies</h3>
+                <p>Hero autoplay, watchlist, quick play, and discovery rows.</p>
+              </article>
+              <article class="showcase-card">
+                <h3>World News Feed</h3>
+                <p>Live multi-source headlines with category filters and refresh.</p>
+              </article>
+              <article class="showcase-card">
+                <h3>Sports Arena</h3>
+                <p>Cricket, football, chess, and badminton highlights in one stream.</p>
+              </article>
+            </aside>
+          </div>
+
           <div class="category-grid">
             <article class="category-card" data-category="movies">
               <h2>🎬 Movies <span class="status-badge neutral">Curated + Discover</span></h2>

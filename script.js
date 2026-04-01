@@ -352,7 +352,7 @@ const el = {
   profileName: document.getElementById("profileName"),
 
   landingView: document.getElementById("landingView"),
-  categoryCards: Array.from(document.querySelectorAll(".category-card")),
+  categoryCards: Array.from(document.querySelectorAll(".category-card, .landing-enter-btn")),
   landingMovieCount: document.getElementById("landingMovieCount"),
   landingNewsCount: document.getElementById("landingNewsCount"),
   landingSportsCount: document.getElementById("landingSportsCount"),
